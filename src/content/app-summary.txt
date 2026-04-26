@@ -1,2 +1,0 @@
-<strong>ReviewForge</strong> es una Aplicación web open source bajo licencia <u><strong><a href="https://www.apache.org/licenses/LICENSE-2.0">Apache 2.0</a></strong></u>, pensada para acompañarte en todo el proceso de revisión de diseño de circuitos impresos (PCB). Te ayuda a estructurar tus revisiones, identificar y documentar hallazgos con claridad, y mantener la trazabilidad en cada etapa, aplicando una metodología formal que mejora la calidad del análisis técnico y la consistencia de los informes.<br><br>
-© 2026 Ivan Dario Duarte Brito.
