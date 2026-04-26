@@ -19,10 +19,12 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<TabId>("meta");
   const [review, setReview] = useState(createReview);
   const [projectStatus, setProjectStatus] = useState("");
+  const [toastKey, setToastKey] = useState(0);
   const validation = useMemo(() => validateReview(review), [review, i18nInstance.language]);
 
   function showProjectStatus(message: string) {
     setProjectStatus(message);
+    setToastKey((k) => k + 1);
     window.setTimeout(() => setProjectStatus(""), 3000);
   }
 
@@ -159,7 +161,6 @@ export default function App() {
           <div className="app-nav-actions">
             <LanguageSwitcher />
             <ProjectActions
-              status={projectStatus}
               review={review}
               canPrint={validation.isValid}
               onSave={saveProgress}
@@ -343,7 +344,21 @@ export default function App() {
 
         {activeTab === "output" && <OutputPreview review={review} validation={validation} />}
       </div>
+      <Toast key={toastKey} message={projectStatus} />
     </main>
+  );
+}
+
+function Toast({ message }: { message: string }) {
+  if (!message) return null;
+  return (
+    <div className="toast" role="status" aria-live="polite">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" className="toast-icon">
+        <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.4" />
+        <path d="M5 8l2 2 4-4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      <span>{message}</span>
+    </div>
   );
 }
 

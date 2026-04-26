@@ -659,4 +659,35 @@
     background: var(--severity-color);
     color: var(--severity-active-text, #ffffff);
   }
+
+  .toast {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    border-radius: var(--radius-card);
+    border: 1px solid var(--color-border);
+    background: var(--color-surface-strong);
+    box-shadow: var(--shadow-card);
+    font-size: 0.875rem;
+    color: var(--color-text);
+    pointer-events: none;
+    animation: toast-in-out 2.8s ease forwards;
+  }
+
+  .toast-icon {
+    flex-shrink: 0;
+    color: var(--color-primary-600);
+  }
+}
+
+@keyframes toast-in-out {
+  0%   { opacity: 0; transform: translateY(0.6rem); }
+  10%  { opacity: 1; transform: translateY(0); }
+  80%  { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(0.6rem); }
 }

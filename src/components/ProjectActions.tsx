@@ -6,14 +6,13 @@ import type { Review } from "../domain/reviewTypes";
 import { exportReportPdfInBrowser } from "../report/pdf/browserPrint";
 
 interface ProjectActionsProps {
-  status: string;
   review: Review;
   canPrint: boolean;
   onSave: () => void;
   onRestore: (file: File) => void;
 }
 
-export function ProjectActions({ status, review, canPrint, onSave, onRestore }: ProjectActionsProps) {
+export function ProjectActions({ review, canPrint, onSave, onRestore }: ProjectActionsProps) {
   const { t } = useTranslation();
 
   function handleRestore(event: ChangeEvent<HTMLInputElement>) {
@@ -32,7 +31,6 @@ export function ProjectActions({ status, review, canPrint, onSave, onRestore }: 
 
   return (
     <div className="flex items-center justify-end gap-2">
-      {status ? <span className="muted hidden text-xs sm:inline" role="status">{status}</span> : null}
       <button
         className="icon-btn"
         type="button"
