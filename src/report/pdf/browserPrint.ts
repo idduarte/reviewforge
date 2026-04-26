@@ -1,0 +1,64 @@
+import type { Review } from "../../domain/reviewTypes";
+import pdfCoverKickerText from "../../content/pdf-cover-kicker.txt?raw";
+import pdfFooterNoteText from "../../content/pdf-footer-note.txt?raw";
+import { renderReportHtml } from "./reportHtmlRenderer.mjs";
+import reviewforgeMarkSvg from "../../assets/reviewforge-mark.svg?raw";
+
+const fontUrls = {
+  interRegular: new URL("../../../assets/fonts/inter/inter-v20-latin_latin-ext-regular.woff2", import.meta.url).href,
+  interMedium: new URL("../../../assets/fonts/inter/inter-v20-latin_latin-ext-500.woff2", import.meta.url).href,
+  interSemibold: new URL("../../../assets/fonts/inter/inter-v20-latin_latin-ext-600.woff2", import.meta.url).href,
+  plexRegular: new URL("../../../assets/fonts/ibm-plex-sans/ibm-plex-sans-v23-latin_latin-ext-regular.woff2", import.meta.url).href,
+  plexMedium: new URL("../../../assets/fonts/ibm-plex-sans/ibm-plex-sans-v23-latin_latin-ext-500.woff2", import.meta.url).href,
+  plexSemibold: new URL("../../../assets/fonts/ibm-plex-sans/ibm-plex-sans-v23-latin_latin-ext-600.woff2", import.meta.url).href,
+  monoRegular: new URL("../../../assets/fonts/jetbrains-mono/jetbrains-mono-v24-latin_latin-ext-regular.woff2", import.meta.url).href,
+  monoMedium: new URL("../../../assets/fonts/jetbrains-mono/jetbrains-mono-v24-latin_latin-ext-500.woff2", import.meta.url).href,
+  monoSemibold: new URL("../../../assets/fonts/jetbrains-mono/jetbrains-mono-v24-latin_latin-ext-600.woff2", import.meta.url).href,
+};
+
+const autoPrintScript = `
+<script>
+window.addEventListener("load", function () {
+  window.setTimeout(function () {
+    window.focus();
+    window.print();
+  }, 180);
+});
+
+window.addEventListener("afterprint", function () {
+  window.setTimeout(function () {
+    window.close();
+  }, 120);
+});
+</script>
+`;
+
+export function exportReportPdfInBrowser(review: Review): void {
+  const printWindow = window.open("", "_blank");
+
+  if (!printWindow) {
+    throw new Error("popup-blocked");
+  }
+
+  try {
+    const html = renderReportHtml({ review }, {
+      generatedAt: new Date().toISOString(),
+      fonts: fontUrls,
+      pdfCoverKicker: pdfCoverKickerText.trim(),
+      pdfFooterNote: pdfFooterNoteText.trim(),
+      reviewforgeMarkSvg,
+    });
+
+    const printableHtml = html.includes("</body>")
+      ? html.replace("</body>", `${autoPrintScript}</body>`)
+      : `${html}${autoPrintScript}`;
+
+    printWindow.document.open();
+    printWindow.document.write(printableHtml);
+    printWindow.document.close();
+    printWindow.opener = null;
+  } catch (error) {
+    printWindow.close();
+    throw error;
+  }
+}
