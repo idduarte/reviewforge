@@ -1,7 +1,6 @@
 {
   "lang": {
-    "toggle": "ES",
-    "label": "Cambiar a Español"
+    "nativeName": "English"
   },
   "app": {
     "tagline": "Electronic Design Review and Reports Platform",
