@@ -1,10 +1,10 @@
 import { renderReportPrintStyles } from "./reportPrintStyles.mjs";
 
 const SECTION_DEFINITIONS = [
-  { key: "schematics", title: "Esquemáticos", fallbackName: "Esquemático sin nombre" },
-  { key: "bomFiles", title: "BOM", fallbackName: "BOM sin nombre" },
-  { key: "layoutFiles", title: "Layout", fallbackName: "Layout sin nombre" },
-  { key: "extraDocumentFiles", title: "Documentos extra", fallbackName: "Documento extra sin nombre" },
+  { key: "schematics",          titleKey: "pdf.sectionSchematics",      fallbackKey: "pdf.fallbackSchematics" },
+  { key: "bomFiles",            titleKey: "pdf.sectionBom",             fallbackKey: "pdf.fallbackBom" },
+  { key: "layoutFiles",         titleKey: "pdf.sectionLayout",          fallbackKey: "pdf.fallbackLayout" },
+  { key: "extraDocumentFiles",  titleKey: "pdf.sectionExtraDocuments",  fallbackKey: "pdf.fallbackExtraDocuments" },
 ];
 
 const SUMMARY_FIRST_PAGE_CAPACITY = 16;
@@ -12,29 +12,38 @@ const SUMMARY_FOLLOWING_PAGE_CAPACITY = 20;
 const SECTION_PAGE_CAPACITY = 15;
 const FILE_CHUNK_CAPACITY = 9;
 
-export function mapSeverity(severity) {
-  switch (severity) {
-    case "!":
-      return { label: "Fatal", color: "#8F2F2A", textColor: "#FFFFFF" };
-    case "+":
-      return { label: "Importante", color: "#9A6528", textColor: "#FFFFFF" };
-    case "A":
-      return { label: "Recurrente", color: "#D4A72C", textColor: "#16202B" };
-    case "?":
-      return { label: "Pregunta", color: "#4F5FA3", textColor: "#FFFFFF" };
-    case "*":
-      return { label: "Nota", color: "#6B7785", textColor: "#FFFFFF" };
-    case "-":
-    default:
-      return { label: "Menor", color: "#3F6E8C", textColor: "#FFFFFF" };
-  }
+const SEVERITY_COLORS = {
+  "!": { color: "#8F2F2A", textColor: "#FFFFFF" },
+  "+": { color: "#9A6528", textColor: "#FFFFFF" },
+  "A": { color: "#D4A72C", textColor: "#16202B" },
+  "?": { color: "#4F5FA3", textColor: "#FFFFFF" },
+  "*": { color: "#6B7785", textColor: "#FFFFFF" },
+  "-": { color: "#3F6E8C", textColor: "#FFFFFF" },
+};
+
+const SEVERITY_LABEL_KEYS = {
+  "!": "findings.fatal",
+  "+": "findings.important",
+  "-": "findings.minor",
+  "?": "findings.question",
+  "*": "findings.note",
+  "A": "findings.recurring",
+};
+
+export function mapSeverity(severity, t) {
+  const colors = SEVERITY_COLORS[severity] ?? SEVERITY_COLORS["-"];
+  const label = t ? t(SEVERITY_LABEL_KEYS[severity] ?? SEVERITY_LABEL_KEYS["-"]) : severity;
+  return { label, ...colors };
 }
 
-export function collectAppendices(reportJson) {
+export function collectAppendices(reportJson, t) {
   const review = normalizeReport(reportJson);
   const appendices = [];
+  const tFn = t ?? ((key) => key);
 
   for (const section of SECTION_DEFINITIONS) {
+    const sectionTitle = tFn(section.titleKey);
+    const fallbackName = tFn(section.fallbackKey);
     const files = review[section.key] ?? [];
 
     files.forEach((file, fileIndex) => {
@@ -43,12 +52,12 @@ export function collectAppendices(reportJson) {
           appendices.push({
             number: appendices.length + 1,
             id: `appendix-${appendices.length + 1}`,
-            sectionTitle: section.title,
-            fileName: file.name || section.fallbackName,
+            sectionTitle,
+            fileName: file.name || fallbackName,
             severity: finding.severity,
-            findingText: finding.text || "Hallazgo sin descripción.",
+            findingText: finding.text || tFn("pdf.findingFallback"),
             image,
-            findingKey: buildFindingKey(section.title, fileIndex, findingIndex),
+            findingKey: buildFindingKey(section.key, fileIndex, findingIndex),
           });
         });
       });
@@ -60,21 +69,23 @@ export function collectAppendices(reportJson) {
 
 export function renderReportHtml(reportJson, options = {}) {
   const review = normalizeReport(reportJson);
-  const appendices = collectAppendices(review);
+  const t = options.t ?? ((key) => key);
+  const lang = options.lang ?? "es";
+  const appendices = collectAppendices(review, t);
   const generatedAt = options.generatedAt ? new Date(options.generatedAt) : new Date();
   const styles = options.styles ?? renderReportPrintStyles(options.fonts);
-  const pages = buildReportPages(review, appendices, generatedAt);
-  const pdfCoverKicker = options.pdfCoverKicker ?? "Informe de Revisión Técnica de Diseño Electrónico";
-  const pdfFooterNote = options.pdfFooterNote ?? "Elaborado con ReviewForge, con dedicación y atención en cada detalle.";
+  const pages = buildReportPages(review, appendices, generatedAt, t);
+  const pdfCoverKicker = options.pdfCoverKicker ?? t("pdf.coverKicker");
+  const pdfFooterNote = options.pdfFooterNote ?? t("pdf.footerNote");
   const reviewforgeMarkSvg = options.reviewforgeMarkSvg ?? "";
 
   const htmlPages = pages
-    .map((page, index) => renderPage(page, index < 2 ? null : index - 1, reviewforgeMarkSvg, pdfCoverKicker, pdfFooterNote))
+    .map((page, index) => renderPage(page, index < 2 ? null : index - 1, reviewforgeMarkSvg, pdfCoverKicker, pdfFooterNote, t))
     .join("\n");
 
   return [
     "<!doctype html>",
-    '<html lang="es">',
+    `<html lang="${lang}">`,
     "<head>",
     '  <meta charset="utf-8">',
     '  <meta name="viewport" content="width=device-width, initial-scale=1">',
@@ -92,31 +103,31 @@ export function renderReportHtml(reportJson, options = {}) {
   ].join("\n");
 }
 
-function buildReportPages(review, appendices, generatedAt) {
+function buildReportPages(review, appendices, generatedAt, t) {
   return [
-    buildCoverPage(review, generatedAt),
-    buildParticipantsPage(review),
-    ...buildMeetingSummaryPages(review.metadata),
+    buildCoverPage(review, generatedAt, t),
+    buildParticipantsPage(review, t),
+    ...buildMeetingSummaryPages(review.metadata, t),
     ...SECTION_DEFINITIONS.flatMap((section) =>
-      buildSectionPages(review.metadata, section, review[section.key] ?? [], appendices),
+      buildSectionPages(review.metadata, section, review[section.key] ?? [], appendices, t),
     ),
-    ...buildAppendixPages(review.metadata, appendices),
+    ...buildAppendixPages(review.metadata, appendices, t),
   ];
 }
 
-function buildCoverPage(review, generatedAt) {
+function buildCoverPage(review, generatedAt, t) {
   const repository = review.metadata.svnGit.trim();
   const rows = [
-    review.metadata.companyName.trim() ? renderMetaRow("Empresa", review.metadata.companyName) : "",
-    renderMetaRow("Asunto", review.metadata.meetingSubject),
-    renderMetaRow("Fecha de revisión", formatDate(review.metadata.reviewDate)),
-    renderMetaRow("Fecha de reunión", formatDate(review.metadata.meetingDate)),
-    renderMetaRow("Hora de inicio", review.metadata.meetingStart),
-    renderMetaRow("Hora de fin", review.metadata.meetingEnd),
-    renderMetaRow("Lugar", review.metadata.meetingPlace),
-    renderMetaRow("Revisión #", review.metadata.revision || "0"),
-    repository ? renderMetaRow("SVN/GIT", review.metadata.svnGit, true) : "",
-    renderMetaRow("Fecha de generación", formatDateTime(generatedAt)),
+    review.metadata.companyName.trim() ? renderMetaRow(t("pdf.metaCompany"), review.metadata.companyName) : "",
+    renderMetaRow(t("pdf.metaSubject"), review.metadata.meetingSubject),
+    renderMetaRow(t("pdf.metaReviewDate"), formatDate(review.metadata.reviewDate)),
+    renderMetaRow(t("pdf.metaMeetingDate"), formatDate(review.metadata.meetingDate)),
+    renderMetaRow(t("pdf.metaStartTime"), review.metadata.meetingStart),
+    renderMetaRow(t("pdf.metaEndTime"), review.metadata.meetingEnd),
+    renderMetaRow(t("pdf.metaPlace"), review.metadata.meetingPlace),
+    renderMetaRow(t("pdf.metaRevision"), review.metadata.revision || "0"),
+    repository ? renderMetaRow(t("pdf.metaSvnGit"), review.metadata.svnGit, true) : "",
+    renderMetaRow(t("pdf.metaGeneratedAt"), formatDateTime(generatedAt)),
   ]
     .filter(Boolean)
     .join("");
@@ -127,8 +138,8 @@ function buildCoverPage(review, generatedAt) {
     content: `
       <div class="cover-brand-block">
         <h2 class="cover-kicker">__PDF_COVER_KICKER__</h2>
-        ${hasCustomCoverBrand(review.metadata) ? renderCoverBrand(review.metadata) : renderWordmark("cover-wordmark", "h1")}
-        <h1 class="cover-title">${escapeHtml(review.metadata.reviewTitle || "Informe de revisión técnica")}</h1>
+        ${hasCustomCoverBrand(review.metadata) ? renderCoverBrand(review.metadata, t) : renderWordmark("cover-wordmark", "h1")}
+        <h1 class="cover-title">${escapeHtml(review.metadata.reviewTitle || t("pdf.coverTitleFallback"))}</h1>
       </div>
       <div class="meta-grid">
         ${rows}
@@ -137,7 +148,7 @@ function buildCoverPage(review, generatedAt) {
   };
 }
 
-function buildParticipantsPage(review) {
+function buildParticipantsPage(review, t) {
   const rows = review.participants
     .map(
       (participant) => `
@@ -154,29 +165,30 @@ function buildParticipantsPage(review) {
     kind: "standard",
     debugClass: "debug-page-attendees",
     metadata: review.metadata,
-    title: "Asistentes",
-    description: "Participantes registrados para la revisión",
-    footerLabel: "Asistentes",
+    title: t("pdf.participants"),
+    description: t("pdf.participantsDescription"),
+    footerLabel: t("pdf.participants"),
     content: `
       <table class="participant-table">
         <thead>
           <tr>
-            <th>Nombre</th>
-            <th>Iniciales</th>
-            <th>Rol / cargo</th>
-            <th>Email</th>
+            <th>${t("pdf.nameColumn")}</th>
+            <th>${t("pdf.initialsColumn")}</th>
+            <th>${t("pdf.roleColumn")}</th>
+            <th>${t("pdf.emailColumn")}</th>
           </tr>
         </thead>
         <tbody>
-          ${rows || '<tr class="participant-row"><td colspan="4">Sin participantes registrados.</td></tr>'}
+          ${rows || `<tr class="participant-row"><td colspan="4">${t("pdf.noParticipants")}</td></tr>`}
         </tbody>
       </table>
     `,
   };
 }
 
-function buildMeetingSummaryPages(metadata) {
+function buildMeetingSummaryPages(metadata, t) {
   const paragraphs = splitParagraphs(metadata.meetingSummary);
+  const title = t("pdf.meetingSummaryTitle");
 
   if (!paragraphs.length) {
     return [
@@ -184,10 +196,10 @@ function buildMeetingSummaryPages(metadata) {
         kind: "standard",
         debugClass: "debug-page-summary",
         metadata,
-        title: "Resumen de la reunión",
-        description: "Síntesis narrativa de la sesión de revisión",
-        footerLabel: "Resumen de la reunión",
-        content: '<div class="summary-card meeting-summary-body"><p>Sin resumen registrado.</p></div>',
+        title,
+        description: t("pdf.meetingSummaryDescription"),
+        footerLabel: title,
+        content: `<div class="summary-card meeting-summary-body"><p>${t("pdf.noSummary")}</p></div>`,
       },
     ];
   }
@@ -205,18 +217,16 @@ function buildMeetingSummaryPages(metadata) {
     kind: "standard",
     debugClass: "debug-page-summary",
     metadata,
-    title: index === 0 ? "Resumen de la reunión" : "Resumen de la reunión (continuación)",
-    description:
-      index === 0
-        ? "Síntesis narrativa de la sesión de revisión"
-        : "Continuación del resumen de la reunión",
-    footerLabel: "Resumen de la reunión",
+    title: index === 0 ? title : `${title} ${t("pdf.continuation")}`,
+    description: index === 0 ? t("pdf.meetingSummaryDescription") : t("pdf.meetingSummaryContinuation"),
+    footerLabel: title,
     content: `<div class="summary-card meeting-summary-body">${chunk.map((item) => item.html).join("")}</div>`,
   }));
 }
 
-function buildSectionPages(metadata, section, files, appendices) {
-  const fileChunks = buildFileChunks(section, files, appendices);
+function buildSectionPages(metadata, section, files, appendices, t) {
+  const sectionTitle = t(section.titleKey);
+  const fileChunks = buildFileChunks(section, files, appendices, t);
 
   if (!fileChunks.length) {
     return [
@@ -224,10 +234,10 @@ function buildSectionPages(metadata, section, files, appendices) {
         kind: "standard",
         debugClass: "debug-page-section",
         metadata,
-        title: section.title,
-        description: `Resultados de revisión para ${section.title.toLowerCase()}`,
-        footerLabel: section.title,
-        content: '<div class="empty-state">No hay archivos registrados en esta sección.</div>',
+        title: sectionTitle,
+        description: t("pdf.sectionDescription", { title: sectionTitle.toLowerCase() }),
+        footerLabel: sectionTitle,
+        content: `<div class="empty-state">${t("pdf.noFilesInSection")}</div>`,
       },
     ];
   }
@@ -238,27 +248,28 @@ function buildSectionPages(metadata, section, files, appendices) {
     kind: "standard",
     debugClass: "debug-page-section",
     metadata,
-    title: index === 0 ? section.title : `${section.title} (continuación)`,
-    description:
-      index === 0
-        ? `Resultados de revisión para ${section.title.toLowerCase()}`
-        : `Continuación de resultados de revisión para ${section.title.toLowerCase()}`,
-    footerLabel: section.title,
+    title: index === 0 ? sectionTitle : `${sectionTitle} ${t("pdf.continuation")}`,
+    description: index === 0
+      ? t("pdf.sectionDescription", { title: sectionTitle.toLowerCase() })
+      : t("pdf.sectionContinuationDescription", { title: sectionTitle.toLowerCase() }),
+    footerLabel: sectionTitle,
     content: pageItems.map((item) => item.html).join(""),
   }));
 }
 
-function buildAppendixPages(metadata, appendices) {
+function buildAppendixPages(metadata, appendices, t) {
+  const title = t("pdf.annexes");
+
   if (!appendices.length) {
     return [
       {
         kind: "standard",
         debugClass: "debug-page-appendix",
         metadata,
-        title: "Anexos",
-        description: "Imágenes y evidencias asociadas a los hallazgos",
-        footerLabel: "Anexos",
-        content: '<div class="empty-state">No hay anexos embebidos en el informe.</div>',
+        title,
+        description: t("pdf.annexesDescription"),
+        footerLabel: title,
+        content: `<div class="empty-state">${t("pdf.noAnnexes")}</div>`,
       },
     ];
   }
@@ -267,14 +278,15 @@ function buildAppendixPages(metadata, appendices) {
     kind: "standard",
     debugClass: "debug-page-appendix",
     metadata,
-    title: index === 0 ? "Anexos" : "Anexos (continuación)",
-    description: index === 0 ? "Imágenes y evidencias asociadas a los hallazgos" : "Continuación de anexos",
-    footerLabel: "Anexos",
-    content: renderAppendixCard(appendix),
+    title: index === 0 ? title : `${title} ${t("pdf.continuation")}`,
+    description: index === 0 ? t("pdf.annexesDescription") : t("pdf.annexesContinuation"),
+    footerLabel: title,
+    content: renderAppendixCard(appendix, t),
   }));
 }
 
-function buildFileChunks(section, files, appendices) {
+function buildFileChunks(section, files, appendices, t) {
+  const fallbackName = t(section.fallbackKey);
   const chunks = [];
 
   files.forEach((file, fileIndex) => {
@@ -285,19 +297,19 @@ function buildFileChunks(section, files, appendices) {
     if (!validFindings.length) {
       chunks.push({
         units: 4,
-        html: renderFileReviewBlock(file.name || section.fallbackName, [], false),
+        html: renderFileReviewBlock(file.name || fallbackName, [], false, t),
       });
       return;
     }
 
     const renderedRows = validFindings.map(({ finding, findingIndex }) => {
       const references = appendices
-        .filter((appendix) => appendix.findingKey === buildFindingKey(section.title, fileIndex, findingIndex))
-        .map((appendix) => `Anexo ${appendix.number}`);
+        .filter((appendix) => appendix.findingKey === buildFindingKey(section.key, fileIndex, findingIndex))
+        .map((appendix) => t("pdf.appendixLabel", { number: appendix.number }));
 
       return {
         units: estimateFindingUnits(finding.text, references),
-        html: renderFindingRow(finding, references),
+        html: renderFindingRow(finding, references, t),
       };
     });
 
@@ -309,7 +321,7 @@ function buildFileChunks(section, files, appendices) {
       if (currentRows.length > 0 && currentUnits + row.units > FILE_CHUNK_CAPACITY) {
         chunks.push({
           units: 4 + currentUnits,
-          html: renderFileReviewBlock(file.name || section.fallbackName, currentRows.map((item) => item.html), continuation),
+          html: renderFileReviewBlock(file.name || fallbackName, currentRows.map((item) => item.html), continuation, t),
         });
         currentRows = [];
         currentUnits = 0;
@@ -323,7 +335,7 @@ function buildFileChunks(section, files, appendices) {
     if (currentRows.length > 0) {
       chunks.push({
         units: 4 + currentUnits,
-        html: renderFileReviewBlock(file.name || section.fallbackName, currentRows.map((item) => item.html), continuation),
+        html: renderFileReviewBlock(file.name || fallbackName, currentRows.map((item) => item.html), continuation, t),
       });
     }
   });
@@ -331,7 +343,7 @@ function buildFileChunks(section, files, appendices) {
   return chunks;
 }
 
-function renderPage(page, pageNumber, reviewforgeMarkSvg, pdfCoverKicker, pdfFooterNote) {
+function renderPage(page, pageNumber, reviewforgeMarkSvg, pdfCoverKicker, pdfFooterNote, t) {
   if (page.kind === "cover") {
     return `
 <section class="pdf-page pdf-page-cover ${page.debugClass}">
@@ -344,7 +356,7 @@ function renderPage(page, pageNumber, reviewforgeMarkSvg, pdfCoverKicker, pdfFoo
   return `
 <section class="pdf-page pdf-page-standard ${page.debugClass}">
   <header class="page-header">
-    ${renderPageHeader(page.metadata, reviewforgeMarkSvg)}
+    ${renderPageHeader(page.metadata, reviewforgeMarkSvg, t)}
   </header>
   <main class="page-content">
     ${renderSectionHeading(page.title, page.description)}
@@ -359,17 +371,17 @@ function renderPage(page, pageNumber, reviewforgeMarkSvg, pdfCoverKicker, pdfFoo
 </section>`.trim();
 }
 
-function renderPageHeader(metadata, reviewforgeMarkSvg) {
+function renderPageHeader(metadata, reviewforgeMarkSvg, t) {
   return `
 <div class="page-header-inner">
-  ${renderPageHeaderLeft(metadata)}
+  ${renderPageHeaderLeft(metadata, t)}
   <div class="page-header-right">
     ${renderReviewforgeBrand(reviewforgeMarkSvg)}
   </div>
 </div>`.trim();
 }
 
-function renderPageHeaderLeft(metadata) {
+function renderPageHeaderLeft(metadata, t) {
   const logo = metadata?.companyLogoDataUrl?.trim();
   const companyName = metadata?.companyName?.trim();
 
@@ -380,7 +392,7 @@ function renderPageHeaderLeft(metadata) {
   return `
 <div class="page-header-left">
   <div class="page-brand-group">
-    ${logo ? `<img class="page-company-logo" src="${logo}" alt="${escapeHtml(companyName || "Logo de empresa")}">` : ""}
+    ${logo ? `<img class="page-company-logo" src="${logo}" alt="${escapeHtml(companyName || t("pdf.logoAlt"))}">` : ""}
     ${companyName ? `<div class="page-company-name">${escapeHtml(companyName)}</div>` : ""}
   </div>
 </div>`.trim();
@@ -394,67 +406,68 @@ function renderSectionHeading(title, description) {
 </div>`.trim();
 }
 
-function renderFileReviewBlock(fileName, rowHtml, continuation) {
-  const title = continuation ? `${fileName} (continuación)` : fileName;
+function renderFileReviewBlock(fileName, rowHtml, continuation, t) {
+  const title = continuation ? `${fileName} ${t("pdf.continuation")}` : fileName;
+  const hasFindings = rowHtml.length > 0;
 
   return `
 <article class="file-review-block">
   <div class="file-review-header">
     <h3 class="file-review-title">${escapeHtml(title)}</h3>
-    <p class="file-description">${rowHtml.length ? "Hallazgos asociados al archivo revisado." : "Sin hallazgos registrados para este archivo."}</p>
+    <p class="file-description">${hasFindings ? t("pdf.findingsAssociated") : t("pdf.noFindingsForFile")}</p>
   </div>
   ${
-    rowHtml.length
+    hasFindings
       ? `
   <table class="finding-table">
     <thead>
       <tr>
-        <th style="width: 28mm;">Severidad</th>
-        <th>Descripción</th>
-        <th style="width: 30mm;">Anexos</th>
+        <th style="width: 28mm;">${t("pdf.severityColumn")}</th>
+        <th>${t("pdf.descriptionColumn")}</th>
+        <th style="width: 30mm;">${t("pdf.annexesColumn")}</th>
       </tr>
     </thead>
     <tbody>
       ${rowHtml.join("")}
     </tbody>
   </table>`
-      : '<div class="empty-state">Sin hallazgos.</div>'
+      : `<div class="empty-state">${t("pdf.noFindings")}</div>`
   }
 </article>`.trim();
 }
 
-function renderFindingRow(finding, references) {
-  const severity = mapSeverity(finding.severity);
+function renderFindingRow(finding, references, t) {
+  const severity = mapSeverity(finding.severity, t);
 
   return `
 <tr class="finding-row">
   <td>
     <span class="severity-badge" style="background:${severity.color}; color:${severity.textColor};">${escapeHtml(severity.label)}</span>
   </td>
-  <td class="finding-description-cell">${escapeHtml(finding.text || "Sin descripción.")}</td>
+  <td class="finding-description-cell">${escapeHtml(finding.text || t("pdf.noDescription"))}</td>
   <td class="finding-annexes-cell">${references.length ? `<span class="annex-ref">${escapeHtml(references.join(", "))}</span>` : "-"}</td>
 </tr>`.trim();
 }
 
-function renderAppendixCard(appendix) {
-  const severity = mapSeverity(appendix.severity);
+function renderAppendixCard(appendix, t) {
+  const severity = mapSeverity(appendix.severity, t);
 
   return `
 <article class="appendix-card" id="${appendix.id}">
   <div class="appendix-card-header">
-    <h3 class="appendix-title">Anexo ${appendix.number}</h3>
+    <h3 class="appendix-title">${t("pdf.appendixLabel", { number: appendix.number })}</h3>
     <p class="appendix-meta">${escapeHtml(appendix.sectionTitle)} · ${escapeHtml(appendix.fileName)}</p>
   </div>
   <div class="appendix-card-body">
     <div class="appendix-grid">
-      ${renderAppendixRow("Sección origen", appendix.sectionTitle)}
-      ${renderAppendixRow("Archivo origen", appendix.fileName)}
-      ${renderAppendixRow("Severidad", `<span class="severity-badge" style="background:${severity.color}; color:${severity.textColor};">${escapeHtml(severity.label)}</span>`)}
-      ${renderAppendixRow("Imagen", appendix.image.name || "Sin nombre", true)}
-      ${renderAppendixRow("Hallazgo", appendix.findingText)}
+      ${renderAppendixRow(t("pdf.sectionOrigin"), appendix.sectionTitle)}
+      ${renderAppendixRow(t("pdf.fileOrigin"), appendix.fileName)}
+      ${renderAppendixRow(t("pdf.severityLabel"), `<span class="severity-badge" style="background:${severity.color}; color:${severity.textColor};">${escapeHtml(severity.label)}</span>`)}
+      ${renderAppendixRow(t("pdf.imageLabel"), appendix.image.name || t("pdf.noImageName"), true)}
+      ${renderAppendixRow(t("pdf.findingLabel"), appendix.findingText)}
     </div>
     <div class="appendix-image-wrap">
-      <img class="appendix-image" src="${appendix.image.dataUrl}" alt="${escapeHtml(appendix.image.altText || appendix.image.name || `Anexo ${appendix.number}`)}">
+      <img class="appendix-image" src="${appendix.image.dataUrl}" alt="${escapeHtml(appendix.image.altText || appendix.image.name || t("pdf.appendixLabel", { number: appendix.number }))}">
     </div>
   </div>
 </article>`.trim();
@@ -467,13 +480,13 @@ function renderAppendixRow(label, value, mono = false) {
 <div class="appendix-value${mono ? " mono" : ""}">${htmlValue}</div>`.trim();
 }
 
-function renderCoverBrand(metadata) {
+function renderCoverBrand(metadata, t) {
   const logo = metadata.companyLogoDataUrl?.trim();
   const companyName = metadata.companyName?.trim();
 
   return `
 <div class="cover-custom-brand">
-  ${logo ? `<img class="cover-company-logo" src="${logo}" alt="${escapeHtml(companyName || "Logo de empresa")}">` : ""}
+  ${logo ? `<img class="cover-company-logo" src="${logo}" alt="${escapeHtml(companyName || t("pdf.logoAlt"))}">` : ""}
   ${companyName ? `<div class="cover-company-name">${escapeHtml(companyName)}</div>` : ""}
 </div>`.trim();
 }
@@ -501,9 +514,7 @@ function renderMetaRow(label, value, mono = false) {
 }
 
 function paginateItems(items, firstCapacity, followingCapacity) {
-  if (!items.length) {
-    return [[]];
-  }
+  if (!items.length) return [[]];
 
   const pages = [];
   let current = [];
@@ -524,9 +535,7 @@ function paginateItems(items, firstCapacity, followingCapacity) {
     used += itemUnits;
   });
 
-  if (current.length > 0) {
-    pages.push(current);
-  }
+  if (current.length > 0) pages.push(current);
 
   return pages;
 }
@@ -552,8 +561,8 @@ function hasCustomCoverBrand(metadata) {
   return Boolean(metadata.companyName?.trim() || metadata.companyLogoDataUrl?.trim());
 }
 
-function buildFindingKey(sectionTitle, fileIndex, findingIndex) {
-  return `${sectionTitle}-${fileIndex}-${findingIndex}`;
+function buildFindingKey(sectionKey, fileIndex, findingIndex) {
+  return `${sectionKey}-${fileIndex}-${findingIndex}`;
 }
 
 function normalizeReport(reportJson) {
@@ -565,14 +574,10 @@ function normalizeReport(reportJson) {
 }
 
 function formatDate(value) {
-  if (!value) {
-    return "-";
-  }
+  if (!value) return "-";
 
   const [year, month, day] = String(value).split("-");
-  if (!year || !month || !day) {
-    return String(value);
-  }
+  if (!year || !month || !day) return String(value);
 
   return `${day.padStart(2, "0")}.${month.padStart(2, "0")}.${year}`;
 }

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Section } from "./Field";
 import { FindingsEditor } from "./FindingsEditor";
 import type { Finding, SchematicFile } from "../domain/reviewTypes";
@@ -26,11 +27,13 @@ export function SchematicsEditor({
   onRemoveSchematicFinding,
   onSchematicFindingChange,
 }: SchematicsEditorProps) {
+  const { t } = useTranslation();
+
   return (
-    <Section title="Archivos de esquemáticos">
+    <Section title={t("schematics.title")}>
       <div className="mb-3 flex justify-end">
         <button className="btn-secondary" type="button" onClick={onAddSchematic}>
-          + Añadir archivo
+          {t("schematics.addFile")}
         </button>
       </div>
 
@@ -41,14 +44,14 @@ export function SchematicsEditor({
               <input
                 className={`input font-medium ${errors[index]?.name ? "error-input" : ""}`}
                 value={schematic.name}
-                placeholder="Nombre del archivo (Ej: XXX_TOP.SchDoc)"
+                placeholder={t("schematics.filePlaceholder")}
                 onChange={(event) => onSchematicNameChange(index, event.target.value)}
               />
               <button
                 className="btn-danger btn-danger-icon"
                 type="button"
-                title="Eliminar archivo"
-                aria-label="Eliminar archivo"
+                title={t("schematics.removeFile")}
+                aria-label={t("schematics.removeFile")}
                 onClick={() => onRemoveSchematic(index)}
               >
                 <span aria-hidden="true">X</span>

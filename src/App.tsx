@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import appSummaryText from "./content/app-summary.txt?raw";
-import appTaglineText from "./content/app-tagline.txt?raw";
+import { useTranslation } from "react-i18next";
+import i18n from "./i18n";
 import { BomEditor } from "./components/BomEditor";
 import { ExtraDocumentsEditor } from "./components/ExtraDocumentsEditor";
 import { LayoutEditor } from "./components/LayoutEditor";
@@ -16,12 +16,17 @@ import type { Finding, Participant, ReviewMetadata, TabId } from "./domain/revie
 import { validateReview } from "./domain/reviewValidation";
 
 export default function App() {
+  const { t, i18n: i18nInstance } = useTranslation();
   const [activeTab, setActiveTab] = useState<TabId>("meta");
   const [review, setReview] = useState(createReview);
   const [projectStatus, setProjectStatus] = useState("");
-  const validation = useMemo(() => validateReview(review), [review]);
-  const appSummary = sanitizeInlineSummaryHtml(appSummaryText);
-  const appTagline = appTaglineText.trim();
+  const validation = useMemo(() => validateReview(review), [review, i18nInstance.language]);
+
+  function toggleLanguage() {
+    const next = i18nInstance.language === "es" ? "en" : "es";
+    i18n.changeLanguage(next);
+    localStorage.setItem("lang", next);
+  }
 
   function showProjectStatus(message: string) {
     setProjectStatus(message);
@@ -40,7 +45,7 @@ export default function App() {
     link.click();
     link.remove();
     URL.revokeObjectURL(url);
-    showProjectStatus("Avance guardado.");
+    showProjectStatus(t("status.saved"));
   }
 
   function restoreProgress(file: File) {
@@ -49,12 +54,12 @@ export default function App() {
     reader.onload = () => {
       try {
         setReview(parseSavedReview(String(reader.result)));
-        showProjectStatus("Avance restaurado.");
+        showProjectStatus(t("status.restored"));
       } catch {
-        showProjectStatus("No se pudo restaurar el archivo.");
+        showProjectStatus(t("status.restoreError"));
       }
     };
-    reader.onerror = () => showProjectStatus("No se pudo leer el archivo.");
+    reader.onerror = () => showProjectStatus(t("status.readError"));
     reader.readAsText(file);
   }
 
@@ -76,7 +81,7 @@ export default function App() {
     reader.onload = () => {
       updateMetadata("companyLogoDataUrl", String(reader.result ?? ""));
     };
-    reader.onerror = () => showProjectStatus("No se pudo leer el logo.");
+    reader.onerror = () => showProjectStatus(t("status.logoError"));
     reader.readAsDataURL(file);
   }
 
@@ -159,6 +164,15 @@ export default function App() {
         <div className="app-sticky-nav">
           <Tabs activeTab={activeTab} onChange={setActiveTab} />
           <div className="app-nav-actions">
+            <button
+              className="icon-btn"
+              type="button"
+              title={t("lang.label")}
+              aria-label={t("lang.label")}
+              onClick={toggleLanguage}
+            >
+              {t("lang.toggle")}
+            </button>
             <ProjectActions
               status={projectStatus}
               review={review}
@@ -182,8 +196,8 @@ export default function App() {
 
           <div className="app-header-bar mb-5">
             <div className="app-header-copy">
-              <p className="app-kicker">{appTagline}</p>
-              <p className="app-subtitle app-header-summary" dangerouslySetInnerHTML={{ __html: appSummary }} />
+              <p className="app-kicker">{t("app.tagline")}</p>
+              <p className="app-subtitle app-header-summary" dangerouslySetInnerHTML={{ __html: sanitizeInlineSummaryHtml(t("app.summary")) }} />
             </div>
           </div>
         </header>

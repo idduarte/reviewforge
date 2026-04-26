@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Section } from "./Field";
 import { FindingsEditor } from "./FindingsEditor";
 import type { ExtraDocumentFile, Finding } from "../domain/reviewTypes";
@@ -26,11 +27,13 @@ export function ExtraDocumentsEditor({
   onRemoveFinding,
   onFindingChange,
 }: ExtraDocumentsEditorProps) {
+  const { t } = useTranslation();
+
   return (
-    <Section title="Documentos extra">
+    <Section title={t("extraDocuments.title")}>
       <div className="mb-3 flex justify-end">
         <button className="btn-secondary" type="button" onClick={onAddFile}>
-          + Añadir documento
+          {t("extraDocuments.addFile")}
         </button>
       </div>
 
@@ -41,14 +44,14 @@ export function ExtraDocumentsEditor({
               <input
                 className={`input font-medium ${errors[fileIndex]?.name ? "error-input" : ""}`}
                 value={file.name}
-                placeholder="Nombre del documento (Ej: informe térmico, checklist, nota técnica)"
+                placeholder={t("extraDocuments.filePlaceholder")}
                 onChange={(event) => onFileNameChange(fileIndex, event.target.value)}
               />
               <button
                 className="btn-danger btn-danger-icon"
                 type="button"
-                title="Eliminar documento"
-                aria-label="Eliminar documento"
+                title={t("extraDocuments.removeFile")}
+                aria-label={t("extraDocuments.removeFile")}
                 onClick={() => onRemoveFile(fileIndex)}
               >
                 <span aria-hidden="true">X</span>

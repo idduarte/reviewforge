@@ -1,15 +1,7 @@
 import type { ChangeEvent, ClipboardEvent, DragEvent } from "react";
+import { useTranslation } from "react-i18next";
 import type { Finding, FindingImage, FindingSeverity } from "../domain/reviewTypes";
 import type { FindingErrors } from "../domain/reviewValidation";
-
-const severities: Array<{ value: FindingSeverity; label: string; baseClassName: string; activeClassName: string }> = [
-  { value: "!", label: "Fatal", baseClassName: "severity-fatal", activeClassName: "active-fatal" },
-  { value: "+", label: "Importante", baseClassName: "severity-important", activeClassName: "active-important" },
-  { value: "-", label: "Menor", baseClassName: "severity-minor", activeClassName: "active-minor" },
-  { value: "?", label: "Pregunta", baseClassName: "severity-question", activeClassName: "active-question" },
-  { value: "*", label: "Nota", baseClassName: "severity-note", activeClassName: "active-note" },
-  { value: "A", label: "Recurrente", baseClassName: "severity-already", activeClassName: "active-already" },
-];
 
 const allowedImageTypes = ["image/png", "image/jpeg", "image/webp"];
 const maxImageSizeBytes = 2 * 1024 * 1024;
@@ -23,12 +15,21 @@ interface FindingsEditorProps {
 }
 
 export function FindingsEditor({ findings, errors = [], onAdd, onRemove, onChange }: FindingsEditorProps) {
+  const { t } = useTranslation();
+
+  const severities: Array<{ value: FindingSeverity; label: string; baseClassName: string; activeClassName: string }> = [
+    { value: "!", label: t("findings.fatal"), baseClassName: "severity-fatal", activeClassName: "active-fatal" },
+    { value: "+", label: t("findings.important"), baseClassName: "severity-important", activeClassName: "active-important" },
+    { value: "-", label: t("findings.minor"), baseClassName: "severity-minor", activeClassName: "active-minor" },
+    { value: "?", label: t("findings.question"), baseClassName: "severity-question", activeClassName: "active-question" },
+    { value: "*", label: t("findings.note"), baseClassName: "severity-note", activeClassName: "active-note" },
+    { value: "A", label: t("findings.recurring"), baseClassName: "severity-already", activeClassName: "active-already" },
+  ];
+
   async function addImagesFromFiles(finding: Finding, findingIndex: number, files: File[]) {
     const validFiles = files.filter((file) => allowedImageTypes.includes(file.type) && file.size <= maxImageSizeBytes);
 
-    if (!validFiles.length) {
-      return;
-    }
+    if (!validFiles.length) return;
 
     const images = await Promise.all(validFiles.map(readImageFile));
     onChange(findingIndex, "images", [...finding.images, ...images]);
@@ -92,15 +93,14 @@ export function FindingsEditor({ findings, errors = [], onAdd, onRemove, onChang
                   onClick={() => onChange(index, "severity", severity.value)}
                   className={`severity-btn ${severity.baseClassName} ${finding.severity === severity.value ? severity.activeClassName : ""}`}
                 >
-                  {/* <span aria-hidden="true" className="mr-1">{severity.value}</span> */}
                   {severity.label}
                 </button>
               ))}
               <button
                 className="btn-danger btn-danger-icon ml-auto"
                 type="button"
-                title="Eliminar hallazgo"
-                aria-label="Eliminar hallazgo"
+                title={t("findings.remove")}
+                aria-label={t("findings.remove")}
                 onClick={() => onRemove(index)}
               >
                 <span aria-hidden="true">X</span>
@@ -110,7 +110,7 @@ export function FindingsEditor({ findings, errors = [], onAdd, onRemove, onChang
             <textarea
               className={`input min-h-20 resize-y leading-6 ${errors[index]?.text ? "error-input" : ""}`}
               value={finding.text}
-              placeholder="Descripción del hallazgo..."
+              placeholder={t("findings.descriptionPlaceholder")}
               onChange={(event) => onChange(index, "text", event.target.value)}
             />
             {errors[index]?.text ? <span className="danger-text mt-1 block text-xs">{errors[index].text}</span> : null}
@@ -118,7 +118,7 @@ export function FindingsEditor({ findings, errors = [], onAdd, onRemove, onChang
             <div className="drop-zone">
               <div className="drop-zone-content">
                 <label className="drop-zone-trigger cursor-pointer">
-                  Añadir imagen
+                  {t("findings.addImage")}
                   <input
                     className="sr-only"
                     type="file"
@@ -127,9 +127,9 @@ export function FindingsEditor({ findings, errors = [], onAdd, onRemove, onChang
                     onChange={(event) => void addImagesFromInput(finding, index, event)}
                   />
                 </label>
-                <span className="muted max-w-2xl text-xs">También puedes pegar una captura o arrastrar varias imágenes aquí.</span>
+                <span className="muted max-w-2xl text-xs">{t("findings.imageHint")}</span>
               </div>
-              <p className="muted mt-1 text-xs">PNG, JPG o WEBP. Máximo 2 MB por imagen.</p>
+              <p className="muted mt-1 text-xs">{t("findings.imageFormats")}</p>
             </div>
 
             {finding.images.length ? (
@@ -140,7 +140,7 @@ export function FindingsEditor({ findings, errors = [], onAdd, onRemove, onChang
                     <input
                       className="input mb-2"
                       value={image.altText}
-                      placeholder="Texto alternativo / pie de imagen"
+                      placeholder={t("findings.altTextPlaceholder")}
                       onChange={(event) => updateImage(finding, index, image.id, { altText: event.target.value })}
                     />
                     <div className="flex items-center justify-between gap-2">
@@ -148,8 +148,8 @@ export function FindingsEditor({ findings, errors = [], onAdd, onRemove, onChang
                       <button
                         className="btn-danger btn-danger-icon"
                         type="button"
-                        title="Eliminar imagen"
-                        aria-label="Eliminar imagen"
+                        title={t("findings.removeImage")}
+                        aria-label={t("findings.removeImage")}
                         onClick={() => removeImage(finding, index, image.id)}
                       >
                         <span aria-hidden="true">X</span>
@@ -165,7 +165,7 @@ export function FindingsEditor({ findings, errors = [], onAdd, onRemove, onChang
 
       {onAdd ? (
         <button className="btn-secondary mt-2" type="button" onClick={onAdd}>
-          + Hallazgo
+          {t("findings.add")}
         </button>
       ) : null}
     </div>
@@ -194,7 +194,7 @@ function getImageName(file: File): string {
     return file.name;
   }
 
-  return `captura-${formatTimestamp(new Date())}-${createShortId()}.${getImageExtension(file.type)}`;
+  return `capture-${formatTimestamp(new Date())}-${createShortId()}.${getImageExtension(file.type)}`;
 }
 
 function isClipboardImageName(name: string): boolean {
@@ -202,14 +202,8 @@ function isClipboardImageName(name: string): boolean {
 }
 
 function getImageExtension(type: string): string {
-  if (type === "image/jpeg") {
-    return "jpg";
-  }
-
-  if (type === "image/webp") {
-    return "webp";
-  }
-
+  if (type === "image/jpeg") return "jpg";
+  if (type === "image/webp") return "webp";
   return "png";
 }
 

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Section } from "./Field";
 import { FindingsEditor } from "./FindingsEditor";
 import type { BomFile, Finding } from "../domain/reviewTypes";
@@ -26,11 +27,13 @@ export function BomEditor({
   onRemoveFinding,
   onFindingChange,
 }: BomEditorProps) {
+  const { t } = useTranslation();
+
   return (
-    <Section title="Archivos BOM">
+    <Section title={t("bom.title")}>
       <div className="mb-3 flex justify-end">
         <button className="btn-secondary" type="button" onClick={onAddFile}>
-          + Añadir archivo BOM
+          {t("bom.addFile")}
         </button>
       </div>
 
@@ -41,14 +44,14 @@ export function BomEditor({
               <input
                 className={`input font-medium ${errors[fileIndex]?.name ? "error-input" : ""}`}
                 value={file.name}
-                placeholder="Nombre del archivo BOM (Ej: XXX_BOM.xlsx)"
+                placeholder={t("bom.filePlaceholder")}
                 onChange={(event) => onFileNameChange(fileIndex, event.target.value)}
               />
               <button
                 className="btn-danger btn-danger-icon"
                 type="button"
-                title="Eliminar archivo BOM"
-                aria-label="Eliminar archivo BOM"
+                title={t("bom.removeFile")}
+                aria-label={t("bom.removeFile")}
                 onClick={() => onRemoveFile(fileIndex)}
               >
                 <span aria-hidden="true">X</span>

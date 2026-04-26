@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Section } from "./Field";
 import { FindingsEditor } from "./FindingsEditor";
 import type { Finding, LayoutFile } from "../domain/reviewTypes";
@@ -26,11 +27,13 @@ export function LayoutEditor({
   onRemoveFinding,
   onFindingChange,
 }: LayoutEditorProps) {
+  const { t } = useTranslation();
+
   return (
-    <Section title="Archivos de layout">
+    <Section title={t("layout.title")}>
       <div className="mb-3 flex justify-end">
         <button className="btn-secondary" type="button" onClick={onAddFile}>
-          + Añadir archivo
+          {t("layout.addFile")}
         </button>
       </div>
 
@@ -41,14 +44,14 @@ export function LayoutEditor({
               <input
                 className={`input font-medium ${errors[fileIndex]?.name ? "error-input" : ""}`}
                 value={file.name}
-                placeholder="Nombre del archivo (Ej: XXX_Layout.PcbDoc)"
+                placeholder={t("layout.filePlaceholder")}
                 onChange={(event) => onFileNameChange(fileIndex, event.target.value)}
               />
               <button
                 className="btn-danger btn-danger-icon"
                 type="button"
-                title="Eliminar archivo"
-                aria-label="Eliminar archivo"
+                title={t("layout.removeFile")}
+                aria-label={t("layout.removeFile")}
                 onClick={() => onRemoveFile(fileIndex)}
               >
                 <span aria-hidden="true">X</span>

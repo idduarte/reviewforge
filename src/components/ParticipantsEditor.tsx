@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Section } from "./Field";
 import type { Participant } from "../domain/reviewTypes";
 import type { ParticipantErrors } from "../domain/reviewValidation";
@@ -12,12 +13,12 @@ interface ParticipantsEditorProps {
 }
 
 export function ParticipantsEditor({ participants, errors, listError, onAdd, onRemove, onChange }: ParticipantsEditorProps) {
+  const { t } = useTranslation();
+
   return (
-    <Section title="Participantes">
+    <Section title={t("participants.title")}>
       {listError ? (
-        <div className="alert-error text-xs">
-          {listError}
-        </div>
+        <div className="alert-error text-xs">{listError}</div>
       ) : null}
 
       <div className="mb-2 grid gap-3">
@@ -25,34 +26,34 @@ export function ParticipantsEditor({ participants, errors, listError, onAdd, onR
           <div className="grid gap-2 md:grid-cols-[1fr_110px_180px_1fr_auto] md:items-start" key={index}>
             <ParticipantInput
               value={participant.name}
-              placeholder="Nombre completo"
+              placeholder={t("participants.namePlaceholder")}
               error={errors[index]?.name}
               onChange={(value) => onChange(index, "name", value)}
             />
             <ParticipantInput
               value={participant.initials}
-              placeholder="Iniciales"
+              placeholder={t("participants.initialsPlaceholder")}
               error={errors[index]?.initials}
               onChange={(value) => onChange(index, "initials", value)}
             />
             <ParticipantInput
               value={participant.role}
-              placeholder="Rol/cargo"
+              placeholder={t("participants.rolePlaceholder")}
               error={errors[index]?.role}
               onChange={(value) => onChange(index, "role", value)}
             />
             <ParticipantInput
               type="email"
               value={participant.email}
-              placeholder="Email"
+              placeholder={t("participants.emailPlaceholder")}
               error={errors[index]?.email}
               onChange={(value) => onChange(index, "email", value)}
             />
             <button
               className="btn-danger btn-danger-icon"
               type="button"
-              title="Eliminar participante"
-              aria-label="Eliminar participante"
+              title={t("participants.remove")}
+              aria-label={t("participants.remove")}
               onClick={() => onRemove(index)}
             >
               <span aria-hidden="true">X</span>
@@ -62,7 +63,7 @@ export function ParticipantsEditor({ participants, errors, listError, onAdd, onR
       </div>
 
       <button className="btn-secondary" type="button" onClick={onAdd}>
-        + Añadir participante
+        {t("participants.add")}
       </button>
     </Section>
   );

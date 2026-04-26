@@ -1,4 +1,5 @@
 import type { ChangeEvent } from "react";
+import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faDownload, faPrint, faUpload } from "@fortawesome/free-solid-svg-icons";
 import type { Review } from "../domain/reviewTypes";
@@ -13,6 +14,8 @@ interface ProjectActionsProps {
 }
 
 export function ProjectActions({ status, review, canPrint, onSave, onRestore }: ProjectActionsProps) {
+  const { t } = useTranslation();
+
   function handleRestore(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
 
@@ -23,10 +26,7 @@ export function ProjectActions({ status, review, canPrint, onSave, onRestore }: 
   }
 
   function handlePrint() {
-    if (!canPrint) {
-      return;
-    }
-
+    if (!canPrint) return;
     exportReportPdfInBrowser(review);
   }
 
@@ -36,16 +36,16 @@ export function ProjectActions({ status, review, canPrint, onSave, onRestore }: 
       <button
         className="icon-btn"
         type="button"
-        title="Guardar avance"
-        aria-label="Guardar avance"
+        title={t("actions.save")}
+        aria-label={t("actions.save")}
         onClick={onSave}
       >
         <FontAwesomeIcon className="h-4 w-4" icon={faDownload} />
       </button>
       <label
         className="icon-btn cursor-pointer"
-        title="Restaurar avance"
-        aria-label="Restaurar avance"
+        title={t("actions.restore")}
+        aria-label={t("actions.restore")}
       >
         <FontAwesomeIcon className="h-4 w-4" icon={faUpload} />
         <input className="sr-only" type="file" accept="application/json,.json" onChange={handleRestore} />
@@ -53,8 +53,8 @@ export function ProjectActions({ status, review, canPrint, onSave, onRestore }: 
       <button
         className="icon-btn"
         type="button"
-        title="Imprimir / Guardar PDF"
-        aria-label="Imprimir / Guardar PDF"
+        title={t("actions.print")}
+        aria-label={t("actions.print")}
         disabled={!canPrint}
         onClick={handlePrint}
       >
