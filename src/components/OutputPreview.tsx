@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import type { Finding, FindingImage, Review } from "../domain/reviewTypes";
 import type { ReviewValidationResult } from "../domain/reviewValidation";
 
@@ -16,23 +18,37 @@ interface RenderedAnnex {
   image: FindingImage;
 }
 
-const severityLabels: Record<string, { label: string; color: string; textColor: string }> = {
-  "!": { label: "Fatal", color: "#8F2F2A", textColor: "#FFFFFF" },
-  "+": { label: "Importante", color: "#9A6528", textColor: "#FFFFFF" },
-  "-": { label: "Menor", color: "#3F6E8C", textColor: "#FFFFFF" },
-  "?": { label: "Pregunta", color: "#4F5FA3", textColor: "#FFFFFF" },
-  "*": { label: "Nota", color: "#6B7785", textColor: "#FFFFFF" },
-  A: { label: "Recurrente", color: "#D4A72C", textColor: "#16202B" },
+const SEVERITY_COLORS: Record<string, { color: string; textColor: string }> = {
+  "!": { color: "#8F2F2A", textColor: "#FFFFFF" },
+  "+": { color: "#9A6528", textColor: "#FFFFFF" },
+  "-": { color: "#3F6E8C", textColor: "#FFFFFF" },
+  "?": { color: "#4F5FA3", textColor: "#FFFFFF" },
+  "*": { color: "#6B7785", textColor: "#FFFFFF" },
+  A:  { color: "#D4A72C", textColor: "#16202B" },
 };
 
+const SEVERITY_LABEL_KEYS: Record<string, string> = {
+  "!": "findings.fatal",
+  "+": "findings.important",
+  "-": "findings.minor",
+  "?": "findings.question",
+  "*": "findings.note",
+  A:  "findings.recurring",
+};
+
+function getSeverityLabel(severity: string, t: TFunction): string {
+  return t(SEVERITY_LABEL_KEYS[severity] ?? SEVERITY_LABEL_KEYS["-"]);
+}
+
 export function OutputPreview({ review, validation }: OutputPreviewProps) {
-  const errors = getValidationMessages(validation);
+  const { t } = useTranslation();
+  const errors = getValidationMessages(validation, t);
 
   return (
     <section className="card-section">
       {errors.length ? (
         <div className="alert-error">
-          <p className="font-medium">Hay campos obligatorios o formatos inválidos.</p>
+          <p className="font-medium">{t("output.validationTitle")}</p>
           <ul className="mt-2 list-disc pl-5 text-xs leading-5">
             {errors.map((error) => (
               <li key={error}>{error}</li>
@@ -41,54 +57,54 @@ export function OutputPreview({ review, validation }: OutputPreviewProps) {
         </div>
       ) : null}
 
-      <MarkdownSummary review={review} />
+      <MarkdownSummary review={review} t={t} />
     </section>
   );
 }
 
-function MarkdownSummary({ review }: { review: Review }) {
+function MarkdownSummary({ review, t }: { review: Review; t: TFunction }) {
   const annexes = collectRenderedAnnexes(review);
 
   return (
     <article className="preview-panel">
-      <h1 className="mb-2 text-2xl font-semibold">{review.metadata.reviewTitle || "Revisión"}</h1>
+      <h1 className="mb-2 text-2xl font-semibold">{review.metadata.reviewTitle || t("output.reviewFallback")}</h1>
       <p className="muted mb-4 text-sm">
-        <strong>Fecha de revisión:</strong> {formatDate(review.metadata.reviewDate)}
+        <strong>{t("output.reviewDateLabel")}</strong> {formatDate(review.metadata.reviewDate)}
       </p>
 
-      <h2 className="mt-5 mb-2 text-lg font-semibold">Resumen de la reunión</h2>
+      <h2 className="mt-5 mb-2 text-lg font-semibold">{t("output.meetingSummaryTitle")}</h2>
       <div className="table-wrap">
         <table className="w-full border-collapse text-left text-sm">
           <thead>
             <tr className="table-heading">
-              <th className="table-label w-48 px-3 py-2 font-medium">Campo</th>
-              <th className="table-label px-3 py-2 font-medium">Valor</th>
+              <th className="table-label w-48 px-3 py-2 font-medium">{t("output.fieldColumn")}</th>
+              <th className="table-label px-3 py-2 font-medium">{t("output.valueColumn")}</th>
             </tr>
           </thead>
           <tbody>
-            <SummaryRow label="Fecha" value={formatDate(review.metadata.meetingDate)} />
-            <SummaryRow label="Hora" value={`${review.metadata.meetingStart} - ${review.metadata.meetingEnd}`} />
-            <SummaryRow label="Lugar" value={review.metadata.meetingPlace} />
-            <SummaryRow label="Asunto" value={review.metadata.meetingSubject} />
-            <SummaryRow label="Empresa" value={review.metadata.companyName || "No especificado"} />
-            <SummaryRow label="SVN/GIT" value={review.metadata.svnGit || "No especificado"} />
-            <SummaryRow label="Revisión #" value={review.metadata.revision || "0"} />
+            <SummaryRow label={t("output.dateRow")} value={formatDate(review.metadata.meetingDate)} />
+            <SummaryRow label={t("output.timeRow")} value={`${review.metadata.meetingStart} - ${review.metadata.meetingEnd}`} />
+            <SummaryRow label={t("output.placeRow")} value={review.metadata.meetingPlace} />
+            <SummaryRow label={t("output.subjectRow")} value={review.metadata.meetingSubject} />
+            <SummaryRow label={t("output.companyRow")} value={review.metadata.companyName || t("output.notSpecified")} />
+            <SummaryRow label={t("output.svnGitRow")} value={review.metadata.svnGit || t("output.notSpecified")} />
+            <SummaryRow label={t("output.revisionRow")} value={review.metadata.revision || "0"} />
           </tbody>
         </table>
       </div>
 
-      <h3 className="mt-4 mb-1 font-semibold">Resumen</h3>
-      <p className="whitespace-pre-wrap">{review.metadata.meetingSummary || "Sin resumen."}</p>
+      <h3 className="mt-4 mb-1 font-semibold">{t("output.summaryLabel")}</h3>
+      <p className="whitespace-pre-wrap">{review.metadata.meetingSummary || t("output.noSummary")}</p>
 
-      <h2 className="mt-5 mb-2 text-lg font-semibold">Participantes</h2>
+      <h2 className="mt-5 mb-2 text-lg font-semibold">{t("output.participantsTitle")}</h2>
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-left text-sm">
           <thead>
             <tr className="row-border">
-              <th className="py-2 pr-3">Nombre</th>
-              <th className="py-2 pr-3">Iniciales</th>
-              <th className="py-2 pr-3">Rol/cargo</th>
-              <th className="py-2 pr-3">Email</th>
+              <th className="py-2 pr-3">{t("output.nameColumn")}</th>
+              <th className="py-2 pr-3">{t("output.initialsColumn")}</th>
+              <th className="py-2 pr-3">{t("output.roleColumn")}</th>
+              <th className="py-2 pr-3">{t("output.emailColumn")}</th>
             </tr>
           </thead>
           <tbody>
@@ -104,11 +120,11 @@ function MarkdownSummary({ review }: { review: Review }) {
         </table>
       </div>
 
-      <RenderedFileSection title="Esquemáticos" files={review.schematics} fallbackName="Esquemático sin nombre" annexes={annexes} />
-      <RenderedFileSection title="BOM" files={review.bomFiles} fallbackName="BOM sin nombre" annexes={annexes} />
-      <RenderedFileSection title="Layout" files={review.layoutFiles} fallbackName="Layout sin nombre" annexes={annexes} />
-      <RenderedFileSection title="Documentos extra" files={review.extraDocumentFiles} fallbackName="Documento extra sin nombre" annexes={annexes} />
-      <RenderedAnnexes annexes={annexes} />
+      <RenderedFileSection sectionKey="schematics" title={t("output.schematicsTitle")} files={review.schematics} fallbackName={t("output.schematicFallback")} annexes={annexes} t={t} />
+      <RenderedFileSection sectionKey="bom" title={t("output.bomTitle")} files={review.bomFiles} fallbackName={t("output.bomFallback")} annexes={annexes} t={t} />
+      <RenderedFileSection sectionKey="layout" title={t("output.layoutTitle")} files={review.layoutFiles} fallbackName={t("output.layoutFallback")} annexes={annexes} t={t} />
+      <RenderedFileSection sectionKey="extraDocuments" title={t("output.extraDocumentsTitle")} files={review.extraDocumentFiles} fallbackName={t("output.extraDocumentFallback")} annexes={annexes} t={t} />
+      <RenderedAnnexes annexes={annexes} t={t} />
     </article>
   );
 }
@@ -123,15 +139,19 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 }
 
 function RenderedFileSection({
+  sectionKey,
   title,
   files,
   fallbackName,
   annexes,
+  t,
 }: {
+  sectionKey: string;
   title: string;
   files: Array<{ name: string; findings: Finding[] }>;
   fallbackName: string;
   annexes: RenderedAnnex[];
+  t: TFunction;
 }) {
   return (
     <section>
@@ -145,34 +165,26 @@ function RenderedFileSection({
                 <table className="w-full border-collapse text-left text-sm">
                   <thead>
                     <tr className="table-heading">
-                      <th className="table-label w-40 px-3 py-2 font-medium">Severidad</th>
-                      <th className="table-label px-3 py-2 font-medium">Descripción</th>
-                      <th className="table-label w-48 px-3 py-2 font-medium">Anexos</th>
+                      <th className="table-label w-40 px-3 py-2 font-medium">{t("output.severityColumn")}</th>
+                      <th className="table-label px-3 py-2 font-medium">{t("output.descriptionColumn")}</th>
+                      <th className="table-label w-48 px-3 py-2 font-medium">{t("output.annexesColumn")}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {file.findings.map((finding, findingIndex) => {
-                      if (!finding.text.trim()) {
-                        return null;
-                      }
+                      if (!finding.text.trim()) return null;
 
-                      const findingAnnexes = getFindingAnnexes(`${title}-${fileIndex}-${findingIndex}`, annexes);
+                      const findingAnnexes = getFindingAnnexes(`${sectionKey}-${fileIndex}-${findingIndex}`, annexes);
 
                       return (
                         <tr className="row-border last:border-b-0" key={findingIndex}>
                           <td className="px-3 py-2">
-                            <span
-                              className="preview-severity-badge"
-                              style={getSeverityBadgeStyle(finding.severity)}
-                            >
-                              {severityLabels[finding.severity]?.label ?? severityLabels["-"].label}
+                            <span className="preview-severity-badge" style={getSeverityBadgeStyle(finding.severity)}>
+                              {getSeverityLabel(finding.severity, t)}
                             </span>
                           </td>
                           <td className="px-3 py-2">
-                            <span
-                              className="preview-finding-chip"
-                              style={getFindingChipStyle(finding.severity)}
-                            >
+                            <span className="preview-finding-chip" style={getFindingChipStyle(finding.severity)}>
                               {finding.text}
                             </span>
                           </td>
@@ -181,7 +193,7 @@ function RenderedFileSection({
                               <div className="flex flex-wrap gap-1.5">
                                 {findingAnnexes.map((annex) => (
                                   <a className="text-link" href={`#${annex.id}`} key={annex.id}>
-                                    Anexo {annex.number}
+                                    {t("output.annex", { number: annex.number })}
                                   </a>
                                 ))}
                               </div>
@@ -196,7 +208,7 @@ function RenderedFileSection({
                 </table>
               </div>
             ) : (
-              <p className="muted italic">Sin hallazgos.</p>
+              <p className="muted italic">{t("output.noFindings")}</p>
             )}
           </div>
         ))}
@@ -205,36 +217,28 @@ function RenderedFileSection({
   );
 }
 
-function RenderedAnnexes({ annexes }: { annexes: RenderedAnnex[] }) {
-  if (!annexes.length) {
-    return null;
-  }
+function RenderedAnnexes({ annexes, t }: { annexes: RenderedAnnex[]; t: TFunction }) {
+  if (!annexes.length) return null;
 
   return (
     <section>
-      <h2 className="mt-5 mb-2 text-lg font-semibold">Anexos</h2>
+      <h2 className="mt-5 mb-2 text-lg font-semibold">{t("output.annexesTitle")}</h2>
       <div className="grid gap-3">
         {annexes.map((annex) => (
           <article className="sub-card scroll-mt-4" id={annex.id} key={annex.number}>
             <h3 className="mb-1 font-semibold">
-              Anexo {annex.number} - {annex.fileName}
+              {t("output.annexTitle", { number: annex.number, fileName: annex.fileName })}
             </h3>
             <div className="mb-3 text-sm">
               <div className="mb-1 flex flex-wrap items-center gap-2">
                 <p className="muted">
-                  <strong>Hallazgo:</strong>
+                  <strong>{t("output.findingLabel")}</strong>
                 </p>
-                <span
-                  className="preview-severity-badge"
-                  style={getSeverityBadgeStyle(annex.severity)}
-                >
-                  {severityLabels[annex.severity]?.label ?? severityLabels["-"].label}
+                <span className="preview-severity-badge" style={getSeverityBadgeStyle(annex.severity)}>
+                  {getSeverityLabel(annex.severity, t)}
                 </span>
               </div>
-              <span
-                className="preview-finding-chip"
-                style={getFindingChipStyle(annex.severity)}
-              >
+              <span className="preview-finding-chip" style={getFindingChipStyle(annex.severity)}>
                 {annex.findingText}
               </span>
             </div>
@@ -252,16 +256,16 @@ function RenderedAnnexes({ annexes }: { annexes: RenderedAnnex[] }) {
 function collectRenderedAnnexes(review: Review): RenderedAnnex[] {
   const annexes: RenderedAnnex[] = [];
 
-  collectSectionAnnexes("Esquemáticos", review.schematics, annexes);
-  collectSectionAnnexes("BOM", review.bomFiles, annexes);
-  collectSectionAnnexes("Layout", review.layoutFiles, annexes);
-  collectSectionAnnexes("Documentos extra", review.extraDocumentFiles, annexes);
+  collectSectionAnnexes("schematics", review.schematics, annexes);
+  collectSectionAnnexes("bom", review.bomFiles, annexes);
+  collectSectionAnnexes("layout", review.layoutFiles, annexes);
+  collectSectionAnnexes("extraDocuments", review.extraDocumentFiles, annexes);
 
   return annexes;
 }
 
 function collectSectionAnnexes(
-  title: string,
+  sectionKey: string,
   files: Array<{ name: string; findings: Finding[] }>,
   annexes: RenderedAnnex[],
 ) {
@@ -272,10 +276,10 @@ function collectSectionAnnexes(
 
         annexes.push({
           number,
-          id: `anexo-${number}`,
-          findingKey: `${title}-${fileIndex}-${findingIndex}`,
-          fileName: file.name || "Archivo sin nombre",
-          findingText: finding.text || "Hallazgo sin descripción",
+          id: `annex-${number}`,
+          findingKey: `${sectionKey}-${fileIndex}-${findingIndex}`,
+          fileName: file.name,
+          findingText: finding.text,
           severity: finding.severity,
           image,
         });
@@ -288,42 +292,42 @@ function getFindingAnnexes(findingKey: string, annexes: RenderedAnnex[]): Render
   return annexes.filter((annex) => annex.findingKey === findingKey);
 }
 
-function getValidationMessages(validation: ReviewValidationResult): string[] {
+function getValidationMessages(validation: ReviewValidationResult, t: TFunction): string[] {
   const metadataErrors = Object.values(validation.metadata);
   const participantListErrors = validation.participantList ? [validation.participantList] : [];
   const participantErrors = validation.participants.flatMap((participant, index) =>
-    Object.values(participant).map((message) => `Participante ${index + 1}: ${message}`),
+    Object.values(participant).map((message) => t("validation.participant", { index: index + 1, message })),
   );
   const schematicErrors = validation.schematics.flatMap((file, index) =>
-    Object.values(file).map((message) => `Esquemático ${index + 1}: ${message}`),
+    Object.values(file).map((message) => t("validation.schematic", { index: index + 1, message })),
   );
   const bomErrors = validation.bomFiles.flatMap((file, index) =>
-    Object.values(file).map((message) => `BOM ${index + 1}: ${message}`),
+    Object.values(file).map((message) => t("validation.bom", { index: index + 1, message })),
   );
   const layoutErrors = validation.layoutFiles.flatMap((file, index) =>
-    Object.values(file).map((message) => `Layout ${index + 1}: ${message}`),
+    Object.values(file).map((message) => t("validation.layoutItem", { index: index + 1, message })),
   );
   const extraDocumentErrors = validation.extraDocumentFiles.flatMap((file, index) =>
-    Object.values(file).map((message) => `Documento extra ${index + 1}: ${message}`),
+    Object.values(file).map((message) => t("validation.extraDocument", { index: index + 1, message })),
   );
   const schematicFindingErrors = validation.schematicFindings.flatMap((findings, fileIndex) =>
     findings.flatMap((finding, findingIndex) =>
-      Object.values(finding).map((message) => `Esquemático ${fileIndex + 1}, hallazgo ${findingIndex + 1}: ${message}`),
+      Object.values(finding).map((message) => t("validation.schematicFinding", { fileIndex: fileIndex + 1, findingIndex: findingIndex + 1, message })),
     ),
   );
   const bomFindingErrors = validation.bomFindings.flatMap((findings, fileIndex) =>
     findings.flatMap((finding, findingIndex) =>
-      Object.values(finding).map((message) => `BOM ${fileIndex + 1}, hallazgo ${findingIndex + 1}: ${message}`),
+      Object.values(finding).map((message) => t("validation.bomFinding", { fileIndex: fileIndex + 1, findingIndex: findingIndex + 1, message })),
     ),
   );
   const layoutFindingErrors = validation.layoutFindings.flatMap((findings, fileIndex) =>
     findings.flatMap((finding, findingIndex) =>
-      Object.values(finding).map((message) => `Layout ${fileIndex + 1}, hallazgo ${findingIndex + 1}: ${message}`),
+      Object.values(finding).map((message) => t("validation.layoutFinding", { fileIndex: fileIndex + 1, findingIndex: findingIndex + 1, message })),
     ),
   );
   const extraDocumentFindingErrors = validation.extraDocumentFindings.flatMap((findings, fileIndex) =>
     findings.flatMap((finding, findingIndex) =>
-      Object.values(finding).map((message) => `Documento extra ${fileIndex + 1}, hallazgo ${findingIndex + 1}: ${message}`),
+      Object.values(finding).map((message) => t("validation.extraDocumentFinding", { fileIndex: fileIndex + 1, findingIndex: findingIndex + 1, message })),
     ),
   );
 
@@ -343,24 +347,19 @@ function getValidationMessages(validation: ReviewValidationResult): string[] {
 }
 
 function formatDate(value: string): string {
-  if (!value) {
-    return "";
-  }
+  if (!value) return "";
 
   const [year, month, day] = value.split("-");
   return `${day.padStart(2, "0")}.${month.padStart(2, "0")}.${year}`;
 }
 
 function getSeverityBadgeStyle(severity: string) {
-  const meta = severityLabels[severity] ?? severityLabels["-"];
-  return {
-    backgroundColor: meta.color,
-    color: meta.textColor,
-  };
+  const meta = SEVERITY_COLORS[severity] ?? SEVERITY_COLORS["-"];
+  return { backgroundColor: meta.color, color: meta.textColor };
 }
 
 function getFindingChipStyle(severity: string) {
-  const meta = severityLabels[severity] ?? severityLabels["-"];
+  const meta = SEVERITY_COLORS[severity] ?? SEVERITY_COLORS["-"];
   return {
     backgroundColor: hexToRgba(meta.color, 0.1),
     borderColor: hexToRgba(meta.color, 0.35),

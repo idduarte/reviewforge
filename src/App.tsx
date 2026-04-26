@@ -1,6 +1,5 @@
-import { useMemo, useState } from "react";
-import appSummaryText from "./content/app-summary.txt?raw";
-import appTaglineText from "./content/app-tagline.txt?raw";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { BomEditor } from "./components/BomEditor";
 import { ExtraDocumentsEditor } from "./components/ExtraDocumentsEditor";
 import { LayoutEditor } from "./components/LayoutEditor";
@@ -16,12 +15,11 @@ import type { Finding, Participant, ReviewMetadata, TabId } from "./domain/revie
 import { validateReview } from "./domain/reviewValidation";
 
 export default function App() {
+  const { t, i18n: i18nInstance } = useTranslation();
   const [activeTab, setActiveTab] = useState<TabId>("meta");
   const [review, setReview] = useState(createReview);
   const [projectStatus, setProjectStatus] = useState("");
-  const validation = useMemo(() => validateReview(review), [review]);
-  const appSummary = sanitizeInlineSummaryHtml(appSummaryText);
-  const appTagline = appTaglineText.trim();
+  const validation = useMemo(() => validateReview(review), [review, i18nInstance.language]);
 
   function showProjectStatus(message: string) {
     setProjectStatus(message);
@@ -40,7 +38,7 @@ export default function App() {
     link.click();
     link.remove();
     URL.revokeObjectURL(url);
-    showProjectStatus("Avance guardado.");
+    showProjectStatus(t("status.saved"));
   }
 
   function restoreProgress(file: File) {
@@ -49,12 +47,12 @@ export default function App() {
     reader.onload = () => {
       try {
         setReview(parseSavedReview(String(reader.result)));
-        showProjectStatus("Avance restaurado.");
+        showProjectStatus(t("status.restored"));
       } catch {
-        showProjectStatus("No se pudo restaurar el archivo.");
+        showProjectStatus(t("status.restoreError"));
       }
     };
-    reader.onerror = () => showProjectStatus("No se pudo leer el archivo.");
+    reader.onerror = () => showProjectStatus(t("status.readError"));
     reader.readAsText(file);
   }
 
@@ -76,7 +74,7 @@ export default function App() {
     reader.onload = () => {
       updateMetadata("companyLogoDataUrl", String(reader.result ?? ""));
     };
-    reader.onerror = () => showProjectStatus("No se pudo leer el logo.");
+    reader.onerror = () => showProjectStatus(t("status.logoError"));
     reader.readAsDataURL(file);
   }
 
@@ -159,6 +157,7 @@ export default function App() {
         <div className="app-sticky-nav">
           <Tabs activeTab={activeTab} onChange={setActiveTab} />
           <div className="app-nav-actions">
+            <LanguageSwitcher />
             <ProjectActions
               status={projectStatus}
               review={review}
@@ -182,8 +181,8 @@ export default function App() {
 
           <div className="app-header-bar mb-5">
             <div className="app-header-copy">
-              <p className="app-kicker">{appTagline}</p>
-              <p className="app-subtitle app-header-summary" dangerouslySetInnerHTML={{ __html: appSummary }} />
+              <p className="app-kicker">{t("app.tagline")}</p>
+              <p className="app-subtitle app-header-summary" dangerouslySetInnerHTML={{ __html: sanitizeInlineSummaryHtml(t("app.summary")) }} />
             </div>
           </div>
         </header>
@@ -345,6 +344,96 @@ export default function App() {
         {activeTab === "output" && <OutputPreview review={review} validation={validation} />}
       </div>
     </main>
+  );
+}
+
+function LanguageSwitcher() {
+  const { i18n } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const langs = Object.keys(i18n.options.resources ?? {});
+
+  function getNativeName(code: string): string {
+    const bundle = i18n.getResourceBundle(code, "translation") as
+      | { lang?: { nativeName?: string } }
+      | undefined;
+    return bundle?.lang?.nativeName ?? code.toUpperCase();
+  }
+
+  useEffect(() => {
+    function onOutsideClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onOutsideClick);
+    return () => document.removeEventListener("mousedown", onOutsideClick);
+  }, []);
+
+  function selectLang(code: string) {
+    i18n.changeLanguage(code);
+    localStorage.setItem("lang", code);
+    setOpen(false);
+  }
+
+  return (
+    <div ref={ref} className="lang-switcher">
+      <button
+        className="lang-switcher-btn"
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        aria-haspopup="listbox"
+        aria-expanded={open ? "true" : "false"}
+      >
+        <GlobeIcon />
+        <span>{getNativeName(i18n.language)}</span>
+        <ChevronIcon open={open} />
+      </button>
+      {open && (
+        <ul className="lang-dropdown" role="listbox" aria-label="Select language">
+          {langs.map((code) => (
+            <li
+              key={code}
+              role="option"
+              aria-selected={code === i18n.language ? "true" : "false"}
+              className={`lang-dropdown-item${code === i18n.language ? " active" : ""}`}
+              onClick={() => selectLang(code)}
+            >
+              {getNativeName(code)}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function GlobeIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.3" />
+      <ellipse cx="8" cy="8" rx="2.6" ry="6.5" stroke="currentColor" strokeWidth="1.3" />
+      <line x1="1.5" y1="8" x2="14.5" y2="8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <line x1="2.2" y1="5" x2="13.8" y2="5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <line x1="2.2" y1="11" x2="13.8" y2="11" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ChevronIcon({ open }: { open: boolean }) {
+  return (
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 12 12"
+      fill="none"
+      aria-hidden="true"
+      className="lang-chevron"
+      data-open={open ? "true" : "false"}
+    >
+      <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
 

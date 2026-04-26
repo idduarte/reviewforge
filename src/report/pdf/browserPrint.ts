@@ -1,6 +1,5 @@
 import type { Review } from "../../domain/reviewTypes";
-import pdfCoverKickerText from "../../content/pdf-cover-kicker.txt?raw";
-import pdfFooterNoteText from "../../content/pdf-footer-note.txt?raw";
+import i18n from "../../i18n";
 import { renderReportHtml } from "./reportHtmlRenderer.mjs";
 import reviewforgeMarkSvg from "../../assets/reviewforge-mark.svg?raw";
 
@@ -41,12 +40,16 @@ export function exportReportPdfInBrowser(review: Review): void {
   }
 
   try {
+    const t = (key: string, opts?: Record<string, unknown>) => i18n.t(key, opts);
+
     const html = renderReportHtml({ review }, {
       generatedAt: new Date().toISOString(),
       fonts: fontUrls,
-      pdfCoverKicker: pdfCoverKickerText.trim(),
-      pdfFooterNote: pdfFooterNoteText.trim(),
+      pdfCoverKicker: t("pdf.coverKicker"),
+      pdfFooterNote: t("pdf.footerNote"),
       reviewforgeMarkSvg,
+      lang: i18n.language,
+      t,
     });
 
     const printableHtml = html.includes("</body>")

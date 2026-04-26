@@ -14,8 +14,10 @@
     "@fortawesome/free-solid-svg-icons": "^7.2.0",
     "@fortawesome/react-fontawesome": "^3.3.1",
     "@tailwindcss/vite": "^4.1.17",
+    "i18next": "^26.0.8",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-i18next": "^17.0.4",
     "tailwindcss": "^4.1.17"
   },
   "devDependencies": {

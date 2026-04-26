@@ -1,4 +1,5 @@
 import type { BomFile, ExtraDocumentFile, Finding, LayoutFile, Participant, Review, ReviewMetadata, SchematicFile } from "./reviewTypes";
+import i18n from "../i18n";
 
 export type MetadataErrors = Partial<Record<keyof ReviewMetadata, string>>;
 export type ParticipantErrors = Array<Partial<Record<keyof Participant, string>>>;
@@ -21,15 +22,15 @@ export interface ReviewValidationResult {
   isValid: boolean;
 }
 
-const requiredMetadataFields: Array<{ key: keyof ReviewMetadata; label: string }> = [
-  { key: "reviewTitle", label: "Título de la revisión" },
-  { key: "reviewDate", label: "Fecha de revisión" },
-  { key: "meetingDate", label: "Fecha de reunión" },
-  { key: "meetingStart", label: "Hora inicio" },
-  { key: "meetingEnd", label: "Hora fin" },
-  { key: "meetingPlace", label: "Lugar" },
-  { key: "meetingSubject", label: "Asunto" },
-  { key: "revision", label: "Revisión #" },
+const requiredMetadataFields: Array<{ key: keyof ReviewMetadata; labelKey: string }> = [
+  { key: "reviewTitle", labelKey: "meta.reviewTitle" },
+  { key: "reviewDate", labelKey: "meta.reviewDate" },
+  { key: "meetingDate", labelKey: "meta.meetingDate" },
+  { key: "meetingStart", labelKey: "meta.meetingStart" },
+  { key: "meetingEnd", labelKey: "meta.meetingEnd" },
+  { key: "meetingPlace", labelKey: "meta.meetingPlace" },
+  { key: "meetingSubject", labelKey: "meta.meetingSubject" },
+  { key: "revision", labelKey: "meta.revision" },
 ];
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -46,7 +47,7 @@ export function validateReview(review: Review): ReviewValidationResult {
   const bomFindings = review.bomFiles.map((file) => file.findings.map(validateFinding));
   const layoutFindings = review.layoutFiles.map((file) => file.findings.map(validateFinding));
   const extraDocumentFindings = review.extraDocumentFiles.map((file) => file.findings.map(validateFinding));
-  const participantList = review.participants.length === 0 ? "Debe existir al menos un participante." : undefined;
+  const participantList = review.participants.length === 0 ? i18n.t("validation.noParticipants") : undefined;
   const hasParticipantErrors = participants.some((participantErrors) => Object.keys(participantErrors).length > 0);
   const hasFileErrors = [schematics, bomFiles, layoutFiles, extraDocumentFiles]
     .some((group) => group.some((fileErrors) => Object.keys(fileErrors).length > 0));
@@ -72,18 +73,18 @@ export function validateReview(review: Review): ReviewValidationResult {
 function validateMetadata(metadata: ReviewMetadata): MetadataErrors {
   const errors: MetadataErrors = {};
 
-  requiredMetadataFields.forEach(({ key, label }) => {
+  requiredMetadataFields.forEach(({ key, labelKey }) => {
     if (!metadata[key].trim()) {
-      errors[key] = `${label} es obligatorio.`;
+      errors[key] = i18n.t("validation.required", { field: i18n.t(labelKey) });
     }
   });
 
   if (metadata.svnGit.trim() && !repositoryPattern.test(metadata.svnGit.trim())) {
-    errors.svnGit = "Ingresa una URL o ruta de repositorio válida.";
+    errors.svnGit = i18n.t("validation.invalidRepo");
   }
 
   if (metadata.meetingStart && metadata.meetingEnd && metadata.meetingStart >= metadata.meetingEnd) {
-    errors.meetingEnd = "La hora fin debe ser posterior a la hora inicio.";
+    errors.meetingEnd = i18n.t("validation.invalidTimeRange");
   }
 
   return errors;
@@ -92,22 +93,14 @@ function validateMetadata(metadata: ReviewMetadata): MetadataErrors {
 function validateParticipant(participant: Participant): Partial<Record<keyof Participant, string>> {
   const errors: Partial<Record<keyof Participant, string>> = {};
 
-  if (!participant.name.trim()) {
-    errors.name = "El nombre es obligatorio.";
-  }
-
-  if (!participant.initials.trim()) {
-    errors.initials = "Las iniciales son obligatorias.";
-  }
-
-  if (!participant.role.trim()) {
-    errors.role = "El rol/cargo es obligatorio.";
-  }
+  if (!participant.name.trim()) errors.name = i18n.t("validation.nameRequired");
+  if (!participant.initials.trim()) errors.initials = i18n.t("validation.initialsRequired");
+  if (!participant.role.trim()) errors.role = i18n.t("validation.roleRequired");
 
   if (!participant.email.trim()) {
-    errors.email = "El correo es obligatorio.";
+    errors.email = i18n.t("validation.emailRequired");
   } else if (!emailPattern.test(participant.email.trim())) {
-    errors.email = "Ingresa un correo válido.";
+    errors.email = i18n.t("validation.invalidEmail");
   }
 
   return errors;
@@ -115,7 +108,7 @@ function validateParticipant(participant: Participant): Partial<Record<keyof Par
 
 function validateNamedFile(file: SchematicFile | BomFile | LayoutFile | ExtraDocumentFile): { name?: string } {
   if (!file.name.trim()) {
-    return { name: "El nombre del archivo es obligatorio." };
+    return { name: i18n.t("validation.fileNameRequired") };
   }
 
   return {};
@@ -123,7 +116,7 @@ function validateNamedFile(file: SchematicFile | BomFile | LayoutFile | ExtraDoc
 
 function validateFinding(finding: Finding): { text?: string } {
   if (!finding.text.trim()) {
-    return { text: "La descripción del hallazgo es obligatoria." };
+    return { text: i18n.t("validation.findingRequired") };
   }
 
   return {};
