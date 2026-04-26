@@ -133,3 +133,11 @@ ReviewForge/
 - Las fuentes se sirven desde `assets/fonts/` incluidas en el build (sin CDN externo).
 - La app es una SPA sin client-side routing (no requiere `_redirects` ni configuración de rutas).
 - El directorio de deploy es `dist/` generado por `vite build`.
+
+---
+
+## Licencia
+
+Distribuido bajo la [Apache License 2.0](LICENSE).
+
+Copyright 2026 idduarte
