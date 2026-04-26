@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Section } from "./Field";
 import { FindingsEditor } from "./FindingsEditor";
@@ -28,6 +29,15 @@ export function BomEditor({
   onFindingChange,
 }: BomEditorProps) {
   const { t } = useTranslation();
+  const gridRef = useRef<HTMLDivElement>(null);
+  const prevLengthRef = useRef(files.length);
+
+  useEffect(() => {
+    if (files.length > prevLengthRef.current) {
+      gridRef.current?.lastElementChild?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+    prevLengthRef.current = files.length;
+  }, [files.length]);
 
   return (
     <Section title={t("bom.title")}>
@@ -37,7 +47,7 @@ export function BomEditor({
         </button>
       </div>
 
-      <div className="grid gap-3">
+      <div ref={gridRef} className="grid gap-3">
         {files.map((file, fileIndex) => (
           <article className="sub-card" key={fileIndex}>
             <div className="mb-2 grid gap-2 md:grid-cols-[1fr_auto]">
@@ -69,6 +79,14 @@ export function BomEditor({
           </article>
         ))}
       </div>
+
+      {files.length > 0 && (
+        <div className="mt-3 flex justify-end">
+          <button className="btn-secondary" type="button" onClick={onAddFile}>
+            {t("bom.addFile")}
+          </button>
+        </div>
+      )}
     </Section>
   );
 }

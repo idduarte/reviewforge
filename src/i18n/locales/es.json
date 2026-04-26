@@ -18,7 +18,12 @@
   "actions": {
     "save": "Guardar avance",
     "restore": "Restaurar avance",
-    "print": "Imprimir / Guardar PDF"
+    "print": "Imprimir / Guardar PDF",
+    "docs": "Guía de uso"
+  },
+  "hint": {
+    "docsTitle": "¿Primera vez aquí?",
+    "docsBody": "Puedes consultar la guía de uso desde el botón al final de la barra."
   },
   "status": {
     "saved": "Avance guardado.",

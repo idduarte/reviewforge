@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Section } from "./Field";
 import { FindingsEditor } from "./FindingsEditor";
@@ -28,6 +29,15 @@ export function SchematicsEditor({
   onSchematicFindingChange,
 }: SchematicsEditorProps) {
   const { t } = useTranslation();
+  const gridRef = useRef<HTMLDivElement>(null);
+  const prevLengthRef = useRef(schematics.length);
+
+  useEffect(() => {
+    if (schematics.length > prevLengthRef.current) {
+      gridRef.current?.lastElementChild?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+    prevLengthRef.current = schematics.length;
+  }, [schematics.length]);
 
   return (
     <Section title={t("schematics.title")}>
@@ -37,7 +47,7 @@ export function SchematicsEditor({
         </button>
       </div>
 
-      <div className="grid gap-3">
+      <div ref={gridRef} className="grid gap-3">
         {schematics.map((schematic, index) => (
           <article className="sub-card" key={index}>
             <div className="mb-2 grid gap-2 md:grid-cols-[1fr_auto]">
@@ -69,6 +79,14 @@ export function SchematicsEditor({
           </article>
         ))}
       </div>
+
+      {schematics.length > 0 && (
+        <div className="mt-3 flex justify-end">
+          <button className="btn-secondary" type="button" onClick={onAddSchematic}>
+            {t("schematics.addFile")}
+          </button>
+        </div>
+      )}
     </Section>
   );
 }

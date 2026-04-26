@@ -18,7 +18,12 @@
   "actions": {
     "save": "Save progress",
     "restore": "Restore progress",
-    "print": "Print / Save PDF"
+    "print": "Print / Save PDF",
+    "docs": "User guide"
+  },
+  "hint": {
+    "docsTitle": "First time here?",
+    "docsBody": "You can read the user guide from the button at the end of the toolbar."
   },
   "status": {
     "saved": "Progress saved.",
