@@ -3,67 +3,206 @@
   "savedAt": "2026-05-16T10:30:00.000Z",
   "review": {
     "metadata": {
-      "reviewTitle": "Revisión SVEC Atlas v2 — Rev. C",
-      "reviewDate": "2026-05-14",
-      "meetingDate": "2026-05-16",
-      "meetingStart": "14:00",
-      "meetingEnd": "17:30",
-      "meetingPlace": "CERN Prevessin, Building 864, Room 1-A15",
-      "meetingSubject": "Revisión de esquemáticos y BOM para Atlas v2",
-      "svnGit": "https://gitlab.cern.ch/atlas/svec-v2",
-      "revision": "3",
-      "meetingSummary": "Se revisaron los esquemáticos principales del módulo de alimentación y la tarjeta base. Se identificaron dos hallazgos bloqueantes relacionados con la polaridad del regulador U4 y el divisor de feedback. El resto de hallazgos son de carácter menor y no bloquean la fabricación.\n\nPróximos pasos: corregir U4, recalcular R17/R18 y actualizar la BOM con footprint de C12.",
-      "companyName": "CERN / Acme Robotics S.L.",
+      "reviewTitle": "Revisión Integral Plataforma de Control Industrial Orion-X1 — Rev. D",
+      "reviewDate": "2026-05-12",
+      "meetingDate": "2026-05-15",
+      "meetingStart": "08:30",
+      "meetingEnd": "17:45",
+      "meetingPlace": "Laboratorio de Integracion Electronica, Edificio I+D, Sala H-204",
+      "meetingSubject": "Revision multidisciplinaria de esquematicos, BOM, layout, manufacturabilidad, integridad de potencia y documentacion de soporte",
+      "svnGit": "https://gitlab.example.com/hw/orion-x1-control-platform",
+      "revision": "4",
+      "meetingSummary": "Se realizo una revision tecnica completa sobre la plataforma Orion-X1, compuesta por tarjeta principal de control, modulo de alimentacion aislado, tarjeta de comunicaciones industriales y arnes de expansion. La sesion cubrio coherencia entre esquematicos, consistencia de la BOM, criterios de layout para potencia, senales diferenciales y EMC, ademas de documentacion complementaria asociada a componentes criticos y requisitos de fabricacion.\n\nSe identificaron hallazgos bloqueantes en la secuencia de alimentacion de FPGA, referencia de tierra analogica para el ADC de precision, proteccion ESD insuficiente en interfaces externas, definicion incompleta de componentes de safety y discrepancias entre huellas y encapsulados declarados en la BOM. Tambien se registraron observaciones de severidad media y baja sobre tolerancias, desacople, vias termicas, testabilidad, rotulado de conectores, derating de capacitores y estrategia de ensamblaje.\n\nLa recomendacion del panel es no liberar la Rev. D a fabricacion hasta cerrar los hallazgos criticos y repetir una verificacion cruzada entre esquematico, BOM y PCB con apoyo de hardware, compras, calidad y manufactura. Una vez resueltos los puntos bloqueantes, se considera viable avanzar a una pre-serie corta para validacion funcional, termica y EMC.",
+      "companyName": "Acme Robotics S.L. / Orion Industrial Systems",
       "companyLogoDataUrl": ""
     },
     "participants": [
       {
         "name": "Marta Rivas",
         "initials": "MR",
-        "role": "Lead reviewer",
-        "email": "marta.rivas@cern.ch"
+        "role": "Lead hardware reviewer",
+        "email": "marta.rivas@orion-industrial.com"
       },
       {
-        "name": "Andrés Solano",
+        "name": "Andres Solano",
         "initials": "AS",
-        "role": "Hardware engineer",
-        "email": "a.solano@acme.io"
-      },
-      {
-        "name": "Jakob Kerner",
-        "initials": "JK",
-        "role": "FW / verification",
-        "email": "jakob.kerner@cern.ch"
+        "role": "Power electronics engineer",
+        "email": "andres.solano@acme.io"
       },
       {
         "name": "Priya Narang",
         "initials": "PN",
-        "role": "Quality assurance",
+        "role": "Quality and compliance",
         "email": "priya.narang@acme.io"
+      },
+      {
+        "name": "Jakob Kerner",
+        "initials": "JK",
+        "role": "Firmware and bring-up",
+        "email": "jakob.kerner@orion-industrial.com"
+      },
+      {
+        "name": "Elena Pardo",
+        "initials": "EP",
+        "role": "PCB layout specialist",
+        "email": "elena.pardo@orion-industrial.com"
+      },
+      {
+        "name": "Luis Mendez",
+        "initials": "LM",
+        "role": "Manufacturing engineer",
+        "email": "luis.mendez@acme.io"
+      },
+      {
+        "name": "Sofia Keller",
+        "initials": "SK",
+        "role": "EMC and validation",
+        "email": "sofia.keller@orion-industrial.com"
+      },
+      {
+        "name": "Daniel Hsu",
+        "initials": "DH",
+        "role": "Component engineering",
+        "email": "daniel.hsu@orion-industrial.com"
       }
     ],
     "schematics": [
       {
-        "name": "main_board.sch",
+        "name": "orion_x1_main_controller.sch",
         "findings": [
           {
             "severity": "!",
-            "text": "Inversión de polaridad en el regulador U4 (pin 12). Las entradas VIN y GND del LDO TPS7A47 están permutadas en el símbolo. Provocará daño irreversible al alimentar; bloqueante para fabricación.",
+            "text": "La secuencia de alimentacion de la FPGA Artix-7 no cumple el orden recomendado por el fabricante. VCCINT y VCCAUX se habilitan en paralelo desde el mismo rail de 1.8 V mediante U18 y U19, mientras que VCCBRAM queda condicionado por un enable retardado. Segun UG470, el orden no es estrictamente secuencial, pero si requiere monotonia y ventana de diferencia controlada. Con la red actual existe riesgo de latch-up o arranque intermitente en frio si VCCBRAM alcanza regulacion significativamente despues del core.",
             "images": []
           },
           {
             "severity": "+",
-            "text": "Divisor de feedback R17/R18 fuera de tolerancia objetivo. Valores actuales 10k/3.3k producen 4.05V; objetivo de diseño 3.30V. Recalcular con tolerancia ±1%.",
+            "text": "La referencia analogica del ADC de 16 bits AD7689 comparte retorno con corrientes de conmutacion provenientes del convertidor buck U7 a traves del plano AGND/DGND unificado bajo el encapsulado. Se recomienda separar el retorno de referencia, unir tierras en un punto controlado cercano al ADC y revisar el filtrado RC en REF_IN para evitar degradacion de ENOB y aumento de ruido de conversion.",
+            "images": []
+          },
+          {
+            "severity": "+",
+            "text": "No se observa pull-up definido para la linea PROGRAM_B de la FPGA. El pin aparece conectado a un encabezado de depuracion y a un supervisor, pero sin una resistencia explicita de polarizacion local. Si el supervisor no esta montado o entra en alta impedancia durante ramp-up, la programacion puede quedar en estado indeterminado.",
+            "images": []
+          },
+          {
+            "severity": "-",
+            "text": "Las redes I2C hacia sensores de temperatura usan 1.0 kOhm como pull-up a 3.3 V pese a una capacidad total estimada de bus inferior a 90 pF. Ese valor incrementa innecesariamente el consumo y endurece los flancos. Valores entre 2.2 kOhm y 4.7 kOhm serian mas razonables para la topologia actual.",
+            "images": []
+          },
+          {
+            "severity": "?",
+            "text": "El reloj de 25 MHz para Ethernet se distribuye tanto al PHY como al CPLD. No queda claro si la carga total, el fan-out y el presupuesto de jitter fueron reevaluados tras agregar el CPLD en Rev. D. Confirmar con simulacion o nota de calculo la adecuacion de la fuente de clock seleccionada.",
+            "images": []
+          },
+          {
+            "severity": "A",
+            "text": "Los nombres de red para las entradas de encoder incremental A/B/Z no siguen la convencion usada en el resto del proyecto. En un canal se usan sufijos _P/_N y en otro CH1A+/CH1A-. Esta inconsistencia dificulta la revision cruzada con layout, firmware y harness documentation.",
+            "images": []
+          },
+          {
+            "severity": "*",
+            "text": "Agregar una nota de diseno junto al ADC indicando que los capacitores de entrada deben mantenerse dentro de la huella y red asociada a la etapa de muestreo para preservar el tiempo de asentamiento. La intencion existe en layout, pero no esta documentada en el esquematico.",
             "images": []
           }
         ]
       },
       {
-        "name": "power_supply.sch",
+        "name": "orion_x1_power_tree.sch",
         "findings": [
           {
+            "severity": "!",
+            "text": "La red de sense remoto del rail de 12 V aislado esta tomada despues del fusible F3 y antes del diodo de proteccion ideal Q12, mientras que el punto de carga real esta al otro lado del conector J21. Esto puede generar compensacion incorrecta ante caida de tension en distribucion y comprometer la estabilidad del lazo al conectarse cargas dinamicas a la salida.",
+            "images": []
+          },
+          {
+            "severity": "+",
+            "text": "El convertidor sincrono de 5 V a 1.0 V usa inductor de 3.3 uH con corriente de saturacion listada de 7.2 A. El calculo rapido con Vin = 5 V, Vout = 1 V, fsw = 500 kHz y ripple de 30 % deja un pico cercano al margen maximo cuando la FPGA entra en configuracion. Revisar saturacion, perdidas DC y margen termico a 70 C de ambiente.",
+            "images": []
+          },
+          {
+            "severity": "+",
+            "text": "El supervisor de tension U3 monitorea solo el rail de 3.3 V principal, pero el microcontrolador tambien depende del rail de 1.2 V del PHY y del 2.5 V de DDR para una secuencia limpia de reset de perifericos. Se recomienda revisar la logica de power-good consolidada para evitar estados parciales de inicializacion.",
+            "images": []
+          },
+          {
             "severity": "-",
-            "text": "Capacitor de desacople C12 (100nF) sin huella asignada en BOM. Usar 0402 estándar y verificar disponibilidad en JLCPCB.",
+            "text": "Los capacitores de bulk en la entrada de 24 V presentan una mezcla de 35 V y 50 V sin nota de derating. Para una linea industrial nominal de 24 V con transitorios definidos por IEC 61000-4-5, conviene justificar la seleccion o migrar a 50 V en todos los casos criticos.",
+            "images": []
+          },
+          {
+            "severity": "?",
+            "text": "No se indica si la resistencia shunt de medicion de corriente del rail de motor requiere conexion Kelvin obligatoria. El esquematico muestra las redes etiquetadas como ISNS_P e ISNS_N, pero falta una nota que lo fuerce en layout y en fabricacion.",
+            "images": []
+          },
+          {
+            "severity": "*",
+            "text": "Seria util anadir en la hoja una tabla resumida con corrientes maximas por rail, margen de regulacion y criterio de derating de cada convertidor. Esa informacion facilita futuras revisiones y discusiones con validacion termica.",
+            "images": []
+          }
+        ]
+      },
+      {
+        "name": "orion_x1_eth_can_io.sch",
+        "findings": [
+          {
+            "severity": "!",
+            "text": "Las lineas CAN_H y CAN_L salen al conector de campo sin proteccion TVS dedicada de baja capacitancia. Solo se observa un arreglo ESD compartido para señales auxiliares de 24 V. Para un equipo industrial con cableado externo, esta omision representa un riesgo alto frente a EFT, ESD y descargas por hot-plug.",
+            "images": []
+          },
+          {
+            "severity": "+",
+            "text": "El PHY Ethernet usa center taps conectados a 3.3 V_AUX con desacople local, pero el choke comun seleccionado en la BOM corresponde a una variante sin el pinout esperado segun el simbolo del esquematico. Hay riesgo de cruce de center taps o asignacion incorrecta durante layout/BOM synchronization.",
+            "images": []
+          },
+          {
+            "severity": "+",
+            "text": "La polarizacion de fail-safe del bus RS-485 se concentra en la tarjeta principal, pero el producto contempla topologias multipunto con nodos externos opcionales. Confirmar si el bias debe ser poblado siempre o solo en la estacion master para evitar cargas redundantes y margen reducido de comun-mode.",
+            "images": []
+          },
+          {
+            "severity": "-",
+            "text": "Las entradas digitales de 24 V tienen filtros RC asimetricos entre canales, presumiblemente por ajustes incrementales durante desarrollo. Homogeneizar valores o documentar claramente por que ciertos canales requieren distinto tiempo de establecimiento.",
+            "images": []
+          },
+          {
+            "severity": "A",
+            "text": "Las notas de proteccion para conectores X3 y X4 hacen referencia a una TVS 'SMCJ33A' en plural, pero en la hoja solo aparece D41. Conviene alinear notas y referencias para evitar dudas en revision de produccion.",
+            "images": []
+          },
+          {
+            "severity": "*",
+            "text": "Agregar identificacion textual del tipo de puerto junto a cada conector externo: CAN, RS-485, ETH, DI24, DO24. Ayuda al equipo de validacion y reduce errores cuando se imprimen paginas sueltas del paquete de revision.",
+            "images": []
+          }
+        ]
+      },
+      {
+        "name": "orion_x1_safety_and_isolation.sch",
+        "findings": [
+          {
+            "severity": "!",
+            "text": "La barrera de aislamiento entre dominio de control y dominio de campo no muestra distancia funcional ni componente certificado para la ruta de feedback de fault. El optoacoplador U41 es una referencia de uso general sin aclaracion de creepage, aislamiento de trabajo ni degradacion por temperatura. Debe confirmarse si satisface los requisitos del producto y la normativa objetivo.",
+            "images": []
+          },
+          {
+            "severity": "+",
+            "text": "El comparador de over-voltage que inhibe las salidas de potencia no incluye histéresis explicita. En presencia de ruido sobre el rail de 24 V podria chatterear cerca del umbral y generar activaciones intermitentes de fault latch.",
+            "images": []
+          },
+          {
+            "severity": "+",
+            "text": "La red de descarga de los condensadores del bus de potencia se define solo como una resistencia equivalente total, pero no se especifica la potencia disipada ni el tiempo esperado para caer por debajo de un nivel seguro. Esto es relevante para procedimientos de servicio y seguridad del operario.",
+            "images": []
+          },
+          {
+            "severity": "?",
+            "text": "No queda claro si el estado SAFE_EN debe quedar por defecto activo o inactivo tras una restauracion de energia. El diagrama funcional en documentacion externa sugiere un comportamiento y el esquematico implementa otro.",
+            "images": []
+          },
+          {
+            "severity": "*",
+            "text": "Se recomienda incluir referencias cruzadas a requisitos del sistema de seguridad o a la especificacion funcional para facilitar auditorias tecnicas futuras.",
             "images": []
           }
         ]
@@ -71,16 +210,76 @@
     ],
     "bomFiles": [
       {
-        "name": "atlas_v2_bom.csv",
+        "name": "orion_x1_master_bom_revD.csv",
         "findings": [
           {
-            "severity": "A",
-            "text": "Referencia U7 aparece duplicada en la BOM con distintos valores (10µF y 100nF). Mismo problema que en la revisión anterior Rev. B. Unificar y asignar referencias únicas.",
+            "severity": "!",
+            "text": "El regulador U18 aparece como TPS546D24A en la descripcion, pero la huella y el MPN asociado corresponden a TPS548B22. No es una variacion cosmetica: cambian compensacion, limite de corriente, comportamiento de PMBus y recomendaciones de layout. Este desajuste es bloqueante porque compromete ensamblaje y validacion electrica.",
+            "images": []
+          },
+          {
+            "severity": "+",
+            "text": "Se detectan 14 referencias MLCC de 10 uF 6.3 V en encapsulado 0402 ubicadas sobre rails de 5 V y 3.3 V sin nota de derating. Dependiendo del dielectrico y sesgo DC, la capacitancia efectiva podria caer muy por debajo del valor nominal y afectar estabilidad o respuesta transitoria.",
+            "images": []
+          },
+          {
+            "severity": "+",
+            "text": "El transistor Q32 de high-side switch figura con un alternate MPN automotriz sin revisar el pinout respecto del dispositivo original. En esa familia existen variantes con Source y Drain permutados en el footprint PowerPAK.",
+            "images": []
+          },
+          {
+            "severity": "-",
+            "text": "Las resistencias de precision del front-end analogico mezclan tolerancias de 0.1 % y 1 % dentro del mismo divisor de ganancia. Conviene unificar criterio y dejar marcado en BOM cuales componentes son criticos para calibracion.",
+            "images": []
+          },
+          {
+            "severity": "-",
+            "text": "Hay varios campos Manufacturer Part Number escritos con formatos distintos, algunos con espacios y otros con sufijos de empaque. Esto no rompe el diseno, pero dificulta importacion automatica a PLM y trazabilidad de compras.",
             "images": []
           },
           {
             "severity": "?",
-            "text": "El conector J3 (Molex 53261-0471) no aparece en el listado de proveedores aprobados. ¿Se ha verificado disponibilidad con el departamento de compras?",
+            "text": "El conector RJ45 magnetico seleccionado no aparece en la AVL aprobada del cliente. Confirmar si se permite uso por equivalencia electrica o si debe migrarse a una referencia ya homologada.",
+            "images": []
+          },
+          {
+            "severity": "A",
+            "text": "Existen tres campos diferentes para indicar lifecycle status: 'Active', 'Production', 'OK'. Unificar terminologia y fuente de verdad para que calidad pueda filtrar rapidamente componentes en riesgo de obsolescencia.",
+            "images": []
+          },
+          {
+            "severity": "*",
+            "text": "Agregar una columna de criticidad o familia funcional ayudaría a generar revisiones parciales de BOM por subsistema, por ejemplo potencia, comunicaciones, precision analogica y seguridad.",
+            "images": []
+          }
+        ]
+      },
+      {
+        "name": "orion_x1_alternates_and_avl.xlsx",
+        "findings": [
+          {
+            "severity": "+",
+            "text": "Los alternates del transceptor CAN incluyen referencias con distinto common-mode range y distinta proteccion IEC ESD integrada. En principio todos cumplen velocidad, pero no necesariamente robustez para entorno industrial.",
+            "images": []
+          },
+          {
+            "severity": "+",
+            "text": "Para el oscilador principal se listan dos opciones de 25 MHz con estabilidad de 20 ppm y 50 ppm sin indicar cual es aceptable para Ethernet y sincronizacion interna. La seleccion no deberia depender solo de disponibilidad.",
+            "images": []
+          },
+          {
+            "severity": "-",
+            "text": "Las alternativas de conectores de bornera incluyen pasos de 3.5 mm y 3.81 mm bajo la misma referencia interna. Esa mezcla puede pasar inadvertida hasta el ensamblaje mecanico.",
+            "images": []
+          },
+          {
+            "severity": "?",
+            "text": "No se especifica si los alternates de fusible deben ser UL recognized o solo IEC compliant. La documentacion de certificacion deberia aclararlo antes de liberar compras.",
+            "images": []
+          },
+          {
+            "severity": "*",
+            "text": "Seria conveniente incluir para cada alternate la razon de equivalencia: electrica, mecanica, disponibilidad o costo. Eso agiliza futuras decisiones de sourcing.",
             "images": []
           }
         ]
@@ -88,16 +287,106 @@
     ],
     "layoutFiles": [
       {
-        "name": "atlas_v2_layout.kicad_pcb",
+        "name": "orion_x1_main_board.kicad_pcb",
         "findings": [
           {
+            "severity": "!",
+            "text": "La separacion entre cobre primario de 24 V de campo y zonas logic level cae por debajo de 0.25 mm en la transicion cercana a J5 y U41. Aunque la tension nominal no es extrema, el entorno industrial y la posible presencia de transitorios exigen revisar creepage y clearance segun politica interna de diseno.",
+            "images": []
+          },
+          {
+            "severity": "+",
+            "text": "Las pistas del bus DDR entre FPGA y memoria presentan longitudes relativamente cercanas, pero no hay evidencia clara de control intencional de skew por byte lane. Varias lineas de DQ cambian de capa con numero dispar de vias y el DQS del byte 1 tiene una ruta notablemente mas directa que el resto.",
+            "images": []
+          },
+          {
+            "severity": "+",
+            "text": "El retorno de las lineas diferenciales Ethernet cruza un split de plano bajo el magnetico y cerca del PHY. Eso puede incrementar modo comun y degradar emisiones. Reubicar el split o redefinir el apilado local para asegurar plano continuo bajo el par.",
+            "images": []
+          },
+          {
             "severity": "-",
-            "text": "Clearance entre las pistas de alta corriente L1 y GND plano insuficiente en la zona del regulador (0.15mm, mínimo recomendado 0.2mm para 2A).",
+            "text": "El desacople de VCCAUX y VCCINT en la FPGA muestra varios capacitores a mas de 12 mm de los balls alimentados, con vias compartidas entre componentes. No es un error directo, pero reduce efectividad frente a corrientes transitorias de alta frecuencia.",
+            "images": []
+          },
+          {
+            "severity": "-",
+            "text": "Se observan serigrafias de designator parcialmente cubiertas por conectores y disipadores. Esto complica inspeccion visual, retrabajo y depuracion en laboratorio.",
+            "images": []
+          },
+          {
+            "severity": "A",
+            "text": "La orientacion de algunos optoacopladores y convertidores DC-DC no sigue el mismo criterio visual del resto de la tarjeta. No afecta funcionalidad, pero dificulta lectura rapida del PCB durante assembly review.",
             "images": []
           },
           {
             "severity": "*",
-            "text": "Los vias de costuras de GND en la zona RF podrían aumentarse de 0.3mm a 0.4mm de diámetro para mejorar la manufacturabilidad.",
+            "text": "Agregar puntos de test etiquetados para PG_3V3, PG_1V0, RESET_N, BOOT_MODE[1:0] e I2C_SCL/SDA ahorraria tiempo significativo durante bring-up y validacion de pre-serie.",
+            "images": []
+          }
+        ]
+      },
+      {
+        "name": "orion_x1_power_module.kicad_pcb",
+        "findings": [
+          {
+            "severity": "!",
+            "text": "La malla termica bajo el regulador buck principal U7 usa un patron de vias incompleto; varias vias de thermal pad quedan fuera del cobre expuesto del pad central. Esto compromete disipacion y puede afectar mojado de soldadura, incrementando voiding en reflow.",
+            "images": []
+          },
+          {
+            "severity": "+",
+            "text": "El loop caliente entre MOSFET high-side, low-side, inductor y capacitores de entrada sigue siendo mas extenso de lo deseable. El area del lazo puede amplificar ringing y EMI conducida; hay margen para compactar C101/C102 y reposicionar U7 unos milimetros.",
+            "images": []
+          },
+          {
+            "severity": "+",
+            "text": "Las conexiones Kelvin del shunt de 5 mOhm no estan completamente diferenciadas de las pistas de potencia durante los primeros milimetros. En mediciones de corriente dinamica esto puede introducir error sistematico y ruido acoplado al amplificador de sense.",
+            "images": []
+          },
+          {
+            "severity": "-",
+            "text": "El poligono de GND bajo el transformador del convertidor aislado deja estrechamientos pronunciados que pueden generar cuellos de botella de retorno. Se recomienda revisar continuidad del plano y vias de stitching perimetrales.",
+            "images": []
+          },
+          {
+            "severity": "?",
+            "text": "No queda claro si el keep-out bajo la etapa magnetica se definio por requisito EMC o por limitacion mecanica del encapsulado. Si es un criterio EMC, deberia documentarse para futuras revisiones.",
+            "images": []
+          },
+          {
+            "severity": "*",
+            "text": "Vale la pena considerar fiduciales locales adicionales para esta subplaca si el ensamblaje final se realiza en panel mixto con otros modulos de distinta densidad.",
+            "images": []
+          }
+        ]
+      },
+      {
+        "name": "orion_x1_front_io_board.kicad_pcb",
+        "findings": [
+          {
+            "severity": "+",
+            "text": "Los pares CAN y RS-485 conviven en paralelo durante un tramo largo junto al borde de la tarjeta y muy proximos a salidas digitales de 24 V. Aunque las velocidades no son extremas, aumentar separacion y mejorar referencia de retorno ayudaria a robustez EMC.",
+            "images": []
+          },
+          {
+            "severity": "+",
+            "text": "El arreglo TVS para entradas de encoder se ubica despues del conector y con un stub relativamente largo hacia la referencia de tierra de chasis. La proteccion seria mas efectiva si el desvio ocurre mas cerca del punto de ingreso.",
+            "images": []
+          },
+          {
+            "severity": "-",
+            "text": "Hay vias tentadas muy proximas al borde de fresado en la zona del conector X7. Confirmar capacidad del fabricante para mantener el anillo anular con el tolerancing definido.",
+            "images": []
+          },
+          {
+            "severity": "A",
+            "text": "La serigrafia de numeracion de bornes podria reorganizarse para que coincida visualmente con el orden de cableado indicado en el manual de instalacion.",
+            "images": []
+          },
+          {
+            "severity": "*",
+            "text": "Agregar una referencia de chasis o simbolo de tierra funcional visible junto a los puntos de fijacion mecanica ayudaría a montaje y validacion.",
             "images": []
           }
         ]
@@ -105,11 +394,101 @@
     ],
     "extraDocumentFiles": [
       {
-        "name": "TPS7A47_datasheet_SLVSA88.pdf",
+        "name": "Xilinx_UG470_Configuration_User_Guide.pdf",
         "findings": [
           {
+            "severity": "+",
+            "text": "La guia del fabricante refuerza la necesidad de analizar cuidadosamente power-up monotonicity, ramp rates y estados de pins de configuracion. El esquematico actual parece asumir un comportamiento benigno del supervisor, pero no se adjunta una tabla de secuencia ni una simulacion simple de arranque.",
+            "images": []
+          },
+          {
             "severity": "*",
-            "text": "Revisar la figura 22 del datasheet para la configuración correcta de los pines ADJ y NR/SS del TPS7A47. La nota de aplicación recomienda un capacitor de 10nF en NR/SS que no aparece en el esquemático actual.",
+            "text": "Seria valioso enlazar en el reporte final la seccion concreta de la guia donde se justifican los requisitos de PROGRAM_B, INIT_B y DONE para facilitar cierre de acciones.",
+            "images": []
+          }
+        ]
+      },
+      {
+        "name": "ADC_front_end_noise_budget.xlsx",
+        "findings": [
+          {
+            "severity": "+",
+            "text": "La hoja de calculo asume ruido de referencia de 3 uVrms, pero el esquema implementado no garantiza ese nivel si REF_IN comparte retorno con la etapa digital. El documento y el hardware divergen en la hipotesis base del presupuesto de ruido.",
+            "images": []
+          },
+          {
+            "severity": "?",
+            "text": "No se documenta si los calculos incluyen deriva termica de resistencias de ganancia ni absorcion dielectrica de los condensadores del filtro antialias. Confirmar alcance del modelo.",
+            "images": []
+          },
+          {
+            "severity": "*",
+            "text": "Conviene adjuntar una version congelada del noise budget con numero de revision, porque hoy parece un documento vivo sin trazabilidad respecto del hardware revisado.",
+            "images": []
+          }
+        ]
+      },
+      {
+        "name": "EMC_precompliance_plan_revB.docx",
+        "findings": [
+          {
+            "severity": "+",
+            "text": "El plan de precompliance contempla ESD y burst en puertos externos, pero no explicita criterios de aceptacion para recovery behavior ni retencion de comunicaciones tras eventos EFT. Dado el mercado objetivo, esos criterios deberian estar fijados antes de la pre-serie.",
+            "images": []
+          },
+          {
+            "severity": "-",
+            "text": "La matriz de pruebas aun menciona una revision previa de la tarjeta de I/O y no lista la nueva interfaz de encoder diferencial incorporada en Rev. D.",
+            "images": []
+          },
+          {
+            "severity": "*",
+            "text": "Agregar una tabla que vincule cada prueba EMC con las protecciones fisicas implementadas en el hardware ayudaria a cerrar el circuito entre diseno y validacion.",
+            "images": []
+          }
+        ]
+      },
+      {
+        "name": "manufacturing_dfx_checklist_revC.pdf",
+        "findings": [
+          {
+            "severity": "+",
+            "text": "La checklist DfX exige rotulado legible, accesibilidad para probe ICT y criterio de orientacion consistente en polarizados. El layout actual cumple parcialmente y deberia revisarse antes de enviar gerbers finales.",
+            "images": []
+          },
+          {
+            "severity": "-",
+            "text": "La documentacion menciona un espesor minimo de mascara entre pads finos que no fue explicitamente contrastado con las zonas de FPGA y memoria DDR en esta revision.",
+            "images": []
+          },
+          {
+            "severity": "?",
+            "text": "No se adjunta evidencia de revision panelization versus requerimientos del ensamblador. Confirmar si la pre-serie usara panel dedicado o mix panel con otros productos.",
+            "images": []
+          },
+          {
+            "severity": "*",
+            "text": "Podria ser util incluir en el paquete final una pagina resumen de DfM/DfT con decisiones cerradas y pendientes abiertas.",
+            "images": []
+          }
+        ]
+      },
+      {
+        "name": "safety_requirements_matrix_v1_3.xlsx",
+        "findings": [
+          {
+            "severity": "!",
+            "text": "La matriz de requisitos indica que las salidas de control hacia actuadores deben entrar en estado seguro ante brown-out, watchdog expiration y perdida de enlace con CPU principal. En la documentacion revisada no hay trazabilidad completa entre esos requisitos y la implementacion esquematica de SAFE_EN, FAULT_LATCH y RESET distribution.",
+            "images": []
+          },
+          {
+            "severity": "+",
+            "text": "Faltan referencias explicitas a los componentes responsables de limitar energia y asegurar aislamiento funcional. Esto dificulta demostrar cobertura de requisitos durante auditorias.",
+            "images": []
+          },
+          {
+            "severity": "*",
+            "text": "Seria recomendable mapear cada requisito a pagina de esquematico, referencia de componente y prueba de validacion asociada.",
             "images": []
           }
         ]

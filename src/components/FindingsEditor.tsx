@@ -1,4 +1,4 @@
-import type { ChangeEvent, ClipboardEvent, DragEvent } from "react";
+import type { ClipboardEvent, DragEvent } from "react";
 import { useTranslation } from "react-i18next";
 import type { Finding, FindingImage, FindingSeverity } from "../domain/reviewTypes";
 import type { FindingErrors } from "../domain/reviewValidation";
@@ -47,16 +47,37 @@ export function SevPill({ severity }: { severity: FindingSeverity }) {
 export function FindingsEditor({ findings, errors = [], onAdd, onRemove, onChange }: FindingsEditorProps) {
   const { t } = useTranslation();
 
-  async function addImagesFromFiles(finding: Finding, findingIndex: number, files: File[]) {
+  function restoreScrollPosition(scrollHost: Element | null, scrollTop: number) {
+    if (!(scrollHost instanceof HTMLElement)) return;
+    requestAnimationFrame(() => {
+      scrollHost.scrollTop = scrollTop;
+    });
+  }
+
+  function openImagePicker(finding: Finding, findingIndex: number, trigger: HTMLElement | null) {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = allowedImageTypes.join(",");
+    input.multiple = true;
+
+    input.addEventListener("change", () => {
+      const scrollHost = trigger?.closest(".dash-content") ?? null;
+      const scrollTop = scrollHost instanceof HTMLElement ? scrollHost.scrollTop : 0;
+      void addImagesFromFiles(finding, findingIndex, Array.from(input.files || []), scrollHost).finally(() => {
+        restoreScrollPosition(scrollHost, scrollTop);
+        trigger?.blur();
+      });
+    }, { once: true });
+
+    input.click();
+  }
+
+  async function addImagesFromFiles(finding: Finding, findingIndex: number, files: File[], scrollHost?: Element | null) {
     const validFiles = files.filter((file) => allowedImageTypes.includes(file.type) && file.size <= maxImageSizeBytes);
     if (!validFiles.length) return;
     const images = await Promise.all(validFiles.map(readImageFile));
     onChange(findingIndex, "images", [...finding.images, ...images]);
-  }
-
-  async function addImagesFromInput(finding: Finding, findingIndex: number, event: ChangeEvent<HTMLInputElement>) {
-    await addImagesFromFiles(finding, findingIndex, Array.from(event.target.files || []));
-    event.target.value = "";
+    restoreScrollPosition(scrollHost ?? null, scrollHost instanceof HTMLElement ? scrollHost.scrollTop : 0);
   }
 
   async function addImagesFromPaste(finding: Finding, findingIndex: number, event: ClipboardEvent<HTMLElement>) {
@@ -66,13 +87,19 @@ export function FindingsEditor({ findings, errors = [], onAdd, onRemove, onChang
       .filter((file): file is File => Boolean(file));
     if (files.length) {
       event.preventDefault();
-      await addImagesFromFiles(finding, findingIndex, files);
+      const scrollHost = event.currentTarget.closest(".dash-content");
+      const scrollTop = scrollHost instanceof HTMLElement ? scrollHost.scrollTop : 0;
+      await addImagesFromFiles(finding, findingIndex, files, scrollHost);
+      restoreScrollPosition(scrollHost, scrollTop);
     }
   }
 
   async function addImagesFromDrop(finding: Finding, findingIndex: number, event: DragEvent<HTMLElement>) {
     event.preventDefault();
-    await addImagesFromFiles(finding, findingIndex, Array.from(event.dataTransfer.files || []));
+    const scrollHost = event.currentTarget.closest(".dash-content");
+    const scrollTop = scrollHost instanceof HTMLElement ? scrollHost.scrollTop : 0;
+    await addImagesFromFiles(finding, findingIndex, Array.from(event.dataTransfer.files || []), scrollHost);
+    restoreScrollPosition(scrollHost, scrollTop);
   }
 
   function updateImage(finding: Finding, findingIndex: number, imageId: string, patch: Partial<FindingImage>) {
@@ -134,16 +161,14 @@ export function FindingsEditor({ findings, errors = [], onAdd, onRemove, onChang
 
           <div className="rf-drop-zone" style={{ marginTop: 10 }}>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-              <label className="drop-zone-trigger" style={{ cursor: "pointer" }}>
+              <button
+                className="drop-zone-trigger"
+                style={{ cursor: "pointer" }}
+                type="button"
+                onClick={(event) => openImagePicker(finding, index, event.currentTarget)}
+              >
                 {t("findings.addImage")}
-                <input
-                  className="sr-only"
-                  type="file"
-                  accept={allowedImageTypes.join(",")}
-                  multiple
-                  onChange={(event) => void addImagesFromInput(finding, index, event)}
-                />
-              </label>
+              </button>
               <span className="muted" style={{ fontSize: 11.5, textAlign: "center" }}>{t("findings.imageHint")}</span>
             </div>
             <p className="muted" style={{ marginTop: 4, fontSize: 11.5, margin: 0 }}>{t("findings.imageFormats")}</p>
