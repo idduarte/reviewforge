@@ -6,6 +6,26 @@
     "tagline": "Electronic Design Review and Reports Platform",
     "summary": "<strong>ReviewForge</strong> is an open source web application under the <u><strong><a href=\"https://www.apache.org/licenses/LICENSE-2.0\">Apache 2.0</a></strong></u> license, designed to support you throughout the entire PCB design review process. It helps you structure your reviews, identify and document findings clearly, and maintain traceability at every stage, applying a formal methodology that improves the quality of technical analysis and the consistency of reports.<br><br>© 2026 Ivan Dario Duarte Brito."
   },
+  "ui": {
+    "sectionProject": "Project",
+    "sectionFiles": "Files",
+    "breadcrumbFiles": "Files",
+    "searchPlaceholder": "Search finding…",
+    "completed": "Completed",
+    "required": "required",
+    "errors": "Errors",
+    "toFix": "to fix",
+    "preview": "Preview",
+    "logo": "Logo",
+    "logoLoaded": "loaded",
+    "noLogo": "no logo",
+    "characters": "Characters",
+    "drafted": "drafted",
+    "empty": "empty",
+    "finding": "finding",
+    "findings": "findings",
+    "total": "total"
+  },
   "tabs": {
     "meta": "Header",
     "schematics": "Schematics",
@@ -19,7 +39,9 @@
     "save": "Save progress",
     "restore": "Restore progress",
     "print": "Print / Save PDF",
-    "docs": "User guide"
+    "docs": "User guide",
+    "exportPdf": "Export PDF",
+    "exportPdfDisabled": "Complete required fields to export"
   },
   "hint": {
     "docsTitle": "First time here?",
@@ -33,6 +55,14 @@
     "logoError": "Could not read the logo."
   },
   "meta": {
+    "generalDesc": "General information that will appear on the PDF report cover.",
+    "removeLogo": "Remove",
+    "addLogo": "Drag logo here or",
+    "selectFile": "select file",
+    "sub_encabezado": "General Information",
+    "sub_logo": "Company Information",
+    "sub_resumen": "Meeting Summary",
+    "sub_participantes": "Participants",
     "generalTitle": "General information",
     "reviewTitle": "Review title",
     "reviewTitlePlaceholder": "E.g.: SVEC schematics review",
@@ -60,12 +90,27 @@
   },
   "participants": {
     "title": "Participants",
+    "subtitle": "List of people involved in the review. They will appear in the signatures section of the PDF.",
+    "tileCount": "Participants",
+    "tileRoles": "Roles",
+    "tileDomains": "Domains",
+    "name": "Name",
+    "initialsCol": "Initials",
+    "role": "Role",
+    "email": "Email",
+    "addName": "Add name…",
+    "initialsHint": "Initials are auto-generated from the name. You can edit them if there are conflicts.",
+    "rowsLabel": "rows",
+    "manualOrder": "manual order",
+    "rolesSummary": "Roles summary",
+    "rolesFromTable": "assigned from the table",
     "namePlaceholder": "Full name",
     "initialsPlaceholder": "Initials",
     "rolePlaceholder": "Role/position",
     "emailPlaceholder": "Email",
     "remove": "Remove participant",
-    "add": "+ Add participant"
+    "add": "+ Add participant",
+    "distintos": "distinct"
   },
   "findings": {
     "fatal": "Fatal",
@@ -85,25 +130,33 @@
   },
   "schematics": {
     "title": "Schematic files",
+    "subtitle": "Add schematic files and record findings detected during the review.",
     "addFile": "+ Add file",
+    "addFinding": "Add finding",
     "filePlaceholder": "File name (E.g.: XXX_TOP.SchDoc)",
     "removeFile": "Remove file"
   },
   "bom": {
     "title": "BOM files",
+    "subtitle": "Add bill of materials files and record findings.",
     "addFile": "+ Add BOM file",
+    "addFinding": "Add finding",
     "filePlaceholder": "BOM file name (E.g.: XXX_BOM.xlsx)",
     "removeFile": "Remove BOM file"
   },
   "layout": {
     "title": "Layout files",
+    "subtitle": "Add PCB layout files and record findings.",
     "addFile": "+ Add file",
+    "addFinding": "Add finding",
     "filePlaceholder": "File name (E.g.: XXX_Layout.PcbDoc)",
     "removeFile": "Remove file"
   },
   "extraDocuments": {
     "title": "Extra documents",
+    "subtitle": "Additional documentation related to the review.",
     "addFile": "+ Add document",
+    "addFinding": "Add finding",
     "filePlaceholder": "Document name (E.g.: thermal report, checklist, technical note)",
     "removeFile": "Remove document"
   },

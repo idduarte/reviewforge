@@ -5,18 +5,23 @@ import { ExtraDocumentsEditor } from "./components/ExtraDocumentsEditor";
 import { LayoutEditor } from "./components/LayoutEditor";
 import { OutputPreview } from "./components/OutputPreview";
 import { ParticipantsEditor } from "./components/ParticipantsEditor";
-import { ProjectActions } from "./components/ProjectActions";
 import { ReviewMetadataForm } from "./components/ReviewMetadataForm";
 import { SchematicsEditor } from "./components/SchematicsEditor";
-import { Tabs } from "./components/Tabs";
+import { Sidebar } from "./components/Sidebar";
+import { TopBar } from "./components/TopBar";
 import { createBomFile, createExtraDocumentFile, createFinding, createLayoutFile, createParticipant, createReview, createSchematic } from "./domain/reviewDefaults";
 import { buildSaveFileName, createSavedReview, parseSavedReview } from "./domain/reviewPersistence";
-import type { Finding, Participant, ReviewMetadata, TabId } from "./domain/reviewTypes";
+import type { FileSectionTab, Finding, MetaSubTab, Participant, ReviewMetadata, TabId } from "./domain/reviewTypes";
 import { validateReview } from "./domain/reviewValidation";
+import { exportReportPdfInBrowser } from "./report/pdf/browserPrint";
 
 export default function App() {
   const { t, i18n: i18nInstance } = useTranslation();
   const [activeTab, setActiveTab] = useState<TabId>("meta");
+  const [metaSubTab, setMetaSubTab] = useState<MetaSubTab>("encabezado");
+  const [selectedFile, setSelectedFile] = useState<Record<FileSectionTab, number>>({
+    schematics: -1, bom: -1, layout: -1, extraDocuments: -1,
+  });
   const [review, setReview] = useState(createReview);
   const [projectStatus, setProjectStatus] = useState("");
   const [toastKey, setToastKey] = useState(0);
@@ -153,199 +158,320 @@ export default function App() {
     }));
   }
 
+  function handleSelectFile(tab: FileSectionTab, index: number) {
+    setActiveTab(tab);
+    setSelectedFile((prev) => ({ ...prev, [tab]: index }));
+  }
+
+  function handlePrint() {
+    try {
+      exportReportPdfInBrowser(review);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (message === "popup-blocked") {
+        showProjectStatus(t("status.popupBlocked"));
+      } else {
+        showProjectStatus(t("status.exportError"));
+      }
+    }
+  }
+
   return (
-    <main className="app-shell">
-      <div className="app-sticky-shell app-sticky-shell-visible">
-        <div className="app-sticky-nav">
-          <Tabs activeTab={activeTab} onChange={setActiveTab} />
-          <div className="app-nav-actions">
-            <LanguageSwitcher />
-            <ProjectActions
-              review={review}
-              canPrint={validation.isValid}
-              onSave={saveProgress}
-              onRestore={restoreProgress}
-            />
-          </div>
-        </div>
-      </div>
-      <div className="app-container">
-        <header className="app-header">
-          <div className="app-brand">
-            <div className="app-brand-mark">
-              <img className="app-brand-icon" src="./favicon.svg" alt="" aria-hidden="true" />
-              <h1 className="app-title">
-                Review<span>Forge</span>
-              </h1>
-            </div>
-          </div>
+    <div className="dash-shell">
+      <Sidebar
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        metaSubTab={metaSubTab}
+        onMetaSubTabChange={setMetaSubTab}
+        selectedFile={selectedFile}
+        onSelectFile={handleSelectFile}
+        review={review}
+        canPrint={validation.isValid}
+        onSave={saveProgress}
+        onRestore={restoreProgress}
+        onPrint={handlePrint}
+      />
 
-          <div className="app-header-bar mb-5">
-            <div className="app-header-copy">
-              <p className="app-kicker">{t("app.tagline")}</p>
-              <p className="app-subtitle app-header-summary" dangerouslySetInnerHTML={{ __html: sanitizeInlineSummaryHtml(t("app.summary")) }} />
-            </div>
-          </div>
-        </header>
+      <div className="dash-main">
+        <TopBar activeTab={activeTab} metaSubTab={metaSubTab} review={review} />
 
-        {activeTab === "meta" && (
-        <>
-          <ReviewMetadataForm metadata={review.metadata} errors={validation.metadata} onChange={updateMetadata} onLogoChange={updateCompanyLogo} />
-          <ParticipantsEditor
+        <div className="dash-content">
+          {activeTab === "meta" && (
+          <MetaView
+            subTab={metaSubTab}
+            metadata={review.metadata}
+            metadataErrors={validation.metadata}
             participants={review.participants}
-            errors={validation.participants}
-            listError={validation.participantList}
-            onAdd={() => setReview((current) => ({ ...current, participants: [...current.participants, createParticipant()] }))}
-            onRemove={(index) => setReview((current) => ({ ...current, participants: current.participants.filter((_, currentIndex) => currentIndex !== index) }))}
-            onChange={updateParticipant}
+            participantErrors={validation.participants}
+            participantListError={validation.participantList}
+            onChange={updateMetadata}
+            onLogoChange={updateCompanyLogo}
+            onAddParticipant={() => setReview((current) => ({ ...current, participants: [...current.participants, createParticipant()] }))}
+            onRemoveParticipant={(index) => setReview((current) => ({ ...current, participants: current.participants.filter((_, i) => i !== index) }))}
+            onChangeParticipant={updateParticipant}
           />
-        </>
         )}
 
         {activeTab === "schematics" && (
         <SchematicsEditor
           schematics={review.schematics}
+          selectedIndex={selectedFile.schematics}
           errors={validation.schematics}
           findingErrors={validation.schematicFindings}
-          onAddSchematic={() => setReview((current) => ({ ...current, schematics: [...current.schematics, createSchematic()] }))}
-          onRemoveSchematic={(index) => setReview((current) => ({ ...current, schematics: current.schematics.filter((_, currentIndex) => currentIndex !== index) }))}
+          onAddSchematic={() => {
+            setReview((current) => ({ ...current, schematics: [...current.schematics, createSchematic()] }));
+            setSelectedFile((prev) => ({ ...prev, schematics: review.schematics.length }));
+          }}
+          onRemoveSchematic={(index) => {
+            setReview((current) => ({ ...current, schematics: current.schematics.filter((_, i) => i !== index) }));
+            setSelectedFile((prev) => {
+              const next = prev.schematics <= 0 || prev.schematics === index ? -1 : prev.schematics > index ? prev.schematics - 1 : prev.schematics;
+              return { ...prev, schematics: next };
+            });
+          }}
           onSchematicNameChange={(index, name) =>
             setReview((current) => ({
               ...current,
-              schematics: current.schematics.map((schematic, currentIndex) => currentIndex === index ? { ...schematic, name } : schematic),
+              schematics: current.schematics.map((s, i) => i === index ? { ...s, name } : s),
             }))
           }
           onAddSchematicFinding={(schematicIndex) =>
             setReview((current) => ({
               ...current,
-              schematics: current.schematics.map((schematic, currentIndex) =>
-                currentIndex === schematicIndex ? { ...schematic, findings: [...schematic.findings, createFinding()] } : schematic,
+              schematics: current.schematics.map((s, i) =>
+                i === schematicIndex ? { ...s, findings: [...s.findings, createFinding()] } : s,
               ),
             }))
           }
           onRemoveSchematicFinding={(schematicIndex, findingIndex) =>
             setReview((current) => ({
               ...current,
-              schematics: current.schematics.map((schematic, currentIndex) =>
-                currentIndex === schematicIndex
-                  ? { ...schematic, findings: schematic.findings.filter((_, currentFindingIndex) => currentFindingIndex !== findingIndex) }
-                  : schematic,
+              schematics: current.schematics.map((s, i) =>
+                i === schematicIndex
+                  ? { ...s, findings: s.findings.filter((_, fi) => fi !== findingIndex) }
+                  : s,
               ),
             }))
           }
           onSchematicFindingChange={updateSchematicFinding}
+          onSelectFile={(i) => setSelectedFile((prev) => ({ ...prev, schematics: i }))}
         />
         )}
 
         {activeTab === "bom" && (
         <BomEditor
           files={review.bomFiles}
+          selectedIndex={selectedFile.bom}
           errors={validation.bomFiles}
           findingErrors={validation.bomFindings}
-          onAddFile={() => setReview((current) => ({ ...current, bomFiles: [...current.bomFiles, createBomFile()] }))}
-          onRemoveFile={(index) => setReview((current) => ({ ...current, bomFiles: current.bomFiles.filter((_, currentIndex) => currentIndex !== index) }))}
+          onAddFile={() => {
+            setReview((current) => ({ ...current, bomFiles: [...current.bomFiles, createBomFile()] }));
+            setSelectedFile((prev) => ({ ...prev, bom: review.bomFiles.length }));
+          }}
+          onRemoveFile={(index) => {
+            setReview((current) => ({ ...current, bomFiles: current.bomFiles.filter((_, i) => i !== index) }));
+            setSelectedFile((prev) => {
+              const next = prev.bom <= 0 || prev.bom === index ? -1 : prev.bom > index ? prev.bom - 1 : prev.bom;
+              return { ...prev, bom: next };
+            });
+          }}
           onFileNameChange={(index, name) =>
             setReview((current) => ({
               ...current,
-              bomFiles: current.bomFiles.map((bomFile, currentIndex) => currentIndex === index ? { ...bomFile, name } : bomFile),
+              bomFiles: current.bomFiles.map((f, i) => i === index ? { ...f, name } : f),
             }))
           }
           onAddFinding={(bomFileIndex) =>
             setReview((current) => ({
               ...current,
-              bomFiles: current.bomFiles.map((bomFile, currentIndex) =>
-                currentIndex === bomFileIndex ? { ...bomFile, findings: [...bomFile.findings, createFinding()] } : bomFile,
+              bomFiles: current.bomFiles.map((f, i) =>
+                i === bomFileIndex ? { ...f, findings: [...f.findings, createFinding()] } : f,
               ),
             }))
           }
           onRemoveFinding={(bomFileIndex, findingIndex) =>
             setReview((current) => ({
               ...current,
-              bomFiles: current.bomFiles.map((bomFile, currentIndex) =>
-                currentIndex === bomFileIndex
-                  ? { ...bomFile, findings: bomFile.findings.filter((_, currentFindingIndex) => currentFindingIndex !== findingIndex) }
-                  : bomFile,
+              bomFiles: current.bomFiles.map((f, i) =>
+                i === bomFileIndex
+                  ? { ...f, findings: f.findings.filter((_, fi) => fi !== findingIndex) }
+                  : f,
               ),
             }))
           }
           onFindingChange={updateBomFinding}
+          onSelectFile={(i) => setSelectedFile((prev) => ({ ...prev, bom: i }))}
         />
         )}
 
         {activeTab === "layout" && (
         <LayoutEditor
           files={review.layoutFiles}
+          selectedIndex={selectedFile.layout}
           errors={validation.layoutFiles}
           findingErrors={validation.layoutFindings}
-          onAddFile={() => setReview((current) => ({ ...current, layoutFiles: [...current.layoutFiles, createLayoutFile()] }))}
-          onRemoveFile={(index) => setReview((current) => ({ ...current, layoutFiles: current.layoutFiles.filter((_, currentIndex) => currentIndex !== index) }))}
+          onAddFile={() => {
+            setReview((current) => ({ ...current, layoutFiles: [...current.layoutFiles, createLayoutFile()] }));
+            setSelectedFile((prev) => ({ ...prev, layout: review.layoutFiles.length }));
+          }}
+          onRemoveFile={(index) => {
+            setReview((current) => ({ ...current, layoutFiles: current.layoutFiles.filter((_, i) => i !== index) }));
+            setSelectedFile((prev) => {
+              const next = prev.layout <= 0 || prev.layout === index ? -1 : prev.layout > index ? prev.layout - 1 : prev.layout;
+              return { ...prev, layout: next };
+            });
+          }}
           onFileNameChange={(index, name) =>
             setReview((current) => ({
               ...current,
-              layoutFiles: current.layoutFiles.map((layoutFile, currentIndex) => currentIndex === index ? { ...layoutFile, name } : layoutFile),
+              layoutFiles: current.layoutFiles.map((f, i) => i === index ? { ...f, name } : f),
             }))
           }
           onAddFinding={(layoutFileIndex) =>
             setReview((current) => ({
               ...current,
-              layoutFiles: current.layoutFiles.map((layoutFile, currentIndex) =>
-                currentIndex === layoutFileIndex ? { ...layoutFile, findings: [...layoutFile.findings, createFinding()] } : layoutFile,
+              layoutFiles: current.layoutFiles.map((f, i) =>
+                i === layoutFileIndex ? { ...f, findings: [...f.findings, createFinding()] } : f,
               ),
             }))
           }
           onRemoveFinding={(layoutFileIndex, findingIndex) =>
             setReview((current) => ({
               ...current,
-              layoutFiles: current.layoutFiles.map((layoutFile, currentIndex) =>
-                currentIndex === layoutFileIndex
-                  ? { ...layoutFile, findings: layoutFile.findings.filter((_, currentFindingIndex) => currentFindingIndex !== findingIndex) }
-                  : layoutFile,
+              layoutFiles: current.layoutFiles.map((f, i) =>
+                i === layoutFileIndex
+                  ? { ...f, findings: f.findings.filter((_, fi) => fi !== findingIndex) }
+                  : f,
               ),
             }))
           }
           onFindingChange={updateLayoutFinding}
+          onSelectFile={(i) => setSelectedFile((prev) => ({ ...prev, layout: i }))}
         />
         )}
 
         {activeTab === "extraDocuments" && (
         <ExtraDocumentsEditor
           files={review.extraDocumentFiles}
+          selectedIndex={selectedFile.extraDocuments}
           errors={validation.extraDocumentFiles}
           findingErrors={validation.extraDocumentFindings}
-          onAddFile={() => setReview((current) => ({ ...current, extraDocumentFiles: [...current.extraDocumentFiles, createExtraDocumentFile()] }))}
-          onRemoveFile={(index) => setReview((current) => ({ ...current, extraDocumentFiles: current.extraDocumentFiles.filter((_, currentIndex) => currentIndex !== index) }))}
+          onAddFile={() => {
+            setReview((current) => ({ ...current, extraDocumentFiles: [...current.extraDocumentFiles, createExtraDocumentFile()] }));
+            setSelectedFile((prev) => ({ ...prev, extraDocuments: review.extraDocumentFiles.length }));
+          }}
+          onRemoveFile={(index) => {
+            setReview((current) => ({ ...current, extraDocumentFiles: current.extraDocumentFiles.filter((_, i) => i !== index) }));
+            setSelectedFile((prev) => {
+              const next = prev.extraDocuments <= 0 || prev.extraDocuments === index ? -1 : prev.extraDocuments > index ? prev.extraDocuments - 1 : prev.extraDocuments;
+              return { ...prev, extraDocuments: next };
+            });
+          }}
           onFileNameChange={(index, name) =>
             setReview((current) => ({
               ...current,
-              extraDocumentFiles: current.extraDocumentFiles.map((documentFile, currentIndex) => currentIndex === index ? { ...documentFile, name } : documentFile),
+              extraDocumentFiles: current.extraDocumentFiles.map((f, i) => i === index ? { ...f, name } : f),
             }))
           }
           onAddFinding={(documentFileIndex) =>
             setReview((current) => ({
               ...current,
-              extraDocumentFiles: current.extraDocumentFiles.map((documentFile, currentIndex) =>
-                currentIndex === documentFileIndex ? { ...documentFile, findings: [...documentFile.findings, createFinding()] } : documentFile,
+              extraDocumentFiles: current.extraDocumentFiles.map((f, i) =>
+                i === documentFileIndex ? { ...f, findings: [...f.findings, createFinding()] } : f,
               ),
             }))
           }
           onRemoveFinding={(documentFileIndex, findingIndex) =>
             setReview((current) => ({
               ...current,
-              extraDocumentFiles: current.extraDocumentFiles.map((documentFile, currentIndex) =>
-                currentIndex === documentFileIndex
-                  ? { ...documentFile, findings: documentFile.findings.filter((_, currentFindingIndex) => currentFindingIndex !== findingIndex) }
-                  : documentFile,
+              extraDocumentFiles: current.extraDocumentFiles.map((f, i) =>
+                i === documentFileIndex
+                  ? { ...f, findings: f.findings.filter((_, fi) => fi !== findingIndex) }
+                  : f,
               ),
             }))
           }
           onFindingChange={updateExtraDocumentFinding}
+          onSelectFile={(i) => setSelectedFile((prev) => ({ ...prev, extraDocuments: i }))}
         />
         )}
 
-        {activeTab === "output" && <OutputPreview review={review} validation={validation} />}
+          {activeTab === "output" && <OutputPreview review={review} validation={validation} />}
+
+          <ContentFooter review={review} validation={validation} />
+        </div>
       </div>
+
       <Toast key={toastKey} message={projectStatus} />
-    </main>
+    </div>
+  );
+}
+
+function MetaView({
+  subTab,
+  metadata,
+  metadataErrors,
+  participants,
+  participantErrors,
+  participantListError,
+  onChange,
+  onLogoChange,
+  onAddParticipant,
+  onRemoveParticipant,
+  onChangeParticipant,
+}: {
+  subTab: MetaSubTab;
+  metadata: ReviewMetadata;
+  metadataErrors: ReturnType<typeof validateReview>["metadata"];
+  participants: ReturnType<typeof createReview>["participants"];
+  participantErrors: ReturnType<typeof validateReview>["participants"];
+  participantListError?: string;
+  onChange: <K extends keyof ReviewMetadata>(key: K, value: ReviewMetadata[K]) => void;
+  onLogoChange: (file: File | null) => void;
+  onAddParticipant: () => void;
+  onRemoveParticipant: (index: number) => void;
+  onChangeParticipant: <K extends keyof import("./domain/reviewTypes").Participant>(index: number, key: K, value: import("./domain/reviewTypes").Participant[K]) => void;
+}) {
+  if (subTab === "participantes") {
+    return (
+      <ParticipantsEditor
+        participants={participants}
+        errors={participantErrors}
+        listError={participantListError}
+        onAdd={onAddParticipant}
+        onRemove={onRemoveParticipant}
+        onChange={onChangeParticipant}
+      />
+    );
+  }
+  return (
+    <ReviewMetadataForm
+      metadata={metadata}
+      errors={metadataErrors}
+      subTab={subTab}
+      onChange={onChange}
+      onLogoChange={onLogoChange}
+    />
+  );
+}
+
+function ContentFooter({ review, validation }: { review: ReturnType<typeof createReview>; validation: ReturnType<typeof validateReview> }) {
+  const totalSections = 7;
+  const completed = [
+    Boolean(review.metadata.reviewTitle),
+    Boolean(review.metadata.reviewDate),
+    review.participants.length > 0,
+    review.schematics.length > 0,
+    review.bomFiles.length > 0,
+    review.layoutFiles.length > 0,
+    Boolean(review.metadata.meetingSummary),
+  ].filter(Boolean).length;
+
+  return (
+    <div className="content-footer">
+      <span>autosave · {new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span>
+      <span>{completed} de {totalSections} secciones completadas</span>
+    </div>
   );
 }
 

@@ -14,23 +14,42 @@ interface FindingsEditorProps {
   onChange: <Key extends keyof Finding>(index: number, key: Key, value: Finding[Key]) => void;
 }
 
+const SEV_META: Record<FindingSeverity, { pillClass: string; btnClass: string; activeBtnClass: string }> = {
+  "!": { pillClass: "rf-sev-fatal",     btnClass: "severity-fatal",     activeBtnClass: "active-fatal"     },
+  "+": { pillClass: "rf-sev-important", btnClass: "severity-important", activeBtnClass: "active-important" },
+  "A": { pillClass: "rf-sev-recurring", btnClass: "severity-already",   activeBtnClass: "active-already"   },
+  "-": { pillClass: "rf-sev-minor",     btnClass: "severity-minor",     activeBtnClass: "active-minor"     },
+  "?": { pillClass: "rf-sev-question",  btnClass: "severity-question",  activeBtnClass: "active-question"  },
+  "*": { pillClass: "rf-sev-note",      btnClass: "severity-note",      activeBtnClass: "active-note"      },
+};
+
+const SEVERITIES: FindingSeverity[] = ["!", "+", "A", "-", "?", "*"];
+
+const SEV_LABELS: Record<FindingSeverity, string> = {
+  "!": "Fatal",
+  "+": "Importante",
+  "A": "Recurrente",
+  "-": "Menor",
+  "?": "Consulta",
+  "*": "Nota",
+};
+
+export function SevPill({ severity }: { severity: FindingSeverity }) {
+  const m = SEV_META[severity];
+  return (
+    <span className={`rf-sev-pill ${m.pillClass}`}>
+      <span className="rf-sev-dot" />
+      {SEV_LABELS[severity]}
+    </span>
+  );
+}
+
 export function FindingsEditor({ findings, errors = [], onAdd, onRemove, onChange }: FindingsEditorProps) {
   const { t } = useTranslation();
 
-  const severities: Array<{ value: FindingSeverity; label: string; baseClassName: string; activeClassName: string }> = [
-    { value: "!", label: t("findings.fatal"), baseClassName: "severity-fatal", activeClassName: "active-fatal" },
-    { value: "+", label: t("findings.important"), baseClassName: "severity-important", activeClassName: "active-important" },
-    { value: "-", label: t("findings.minor"), baseClassName: "severity-minor", activeClassName: "active-minor" },
-    { value: "?", label: t("findings.question"), baseClassName: "severity-question", activeClassName: "active-question" },
-    { value: "*", label: t("findings.note"), baseClassName: "severity-note", activeClassName: "active-note" },
-    { value: "A", label: t("findings.recurring"), baseClassName: "severity-already", activeClassName: "active-already" },
-  ];
-
   async function addImagesFromFiles(finding: Finding, findingIndex: number, files: File[]) {
     const validFiles = files.filter((file) => allowedImageTypes.includes(file.type) && file.size <= maxImageSizeBytes);
-
     if (!validFiles.length) return;
-
     const images = await Promise.all(validFiles.map(readImageFile));
     onChange(findingIndex, "images", [...finding.images, ...images]);
   }
@@ -45,7 +64,6 @@ export function FindingsEditor({ findings, errors = [], onAdd, onRemove, onChang
       .filter((item) => item.kind === "file")
       .map((item) => item.getAsFile())
       .filter((file): file is File => Boolean(file));
-
     if (files.length) {
       event.preventDefault();
       await addImagesFromFiles(finding, findingIndex, files);
@@ -58,124 +76,150 @@ export function FindingsEditor({ findings, errors = [], onAdd, onRemove, onChang
   }
 
   function updateImage(finding: Finding, findingIndex: number, imageId: string, patch: Partial<FindingImage>) {
-    onChange(
-      findingIndex,
-      "images",
-      finding.images.map((image) => image.id === imageId ? { ...image, ...patch } : image),
-    );
+    onChange(findingIndex, "images", finding.images.map((image) => image.id === imageId ? { ...image, ...patch } : image));
   }
 
   function removeImage(finding: Finding, findingIndex: number, imageId: string) {
-    onChange(
-      findingIndex,
-      "images",
-      finding.images.filter((image) => image.id !== imageId),
-    );
+    onChange(findingIndex, "images", finding.images.filter((image) => image.id !== imageId));
   }
 
   return (
     <div>
-      <div className="grid gap-2">
-        {findings.map((finding, index) => (
-          <article
-            className="nested-card"
-            key={index}
-            onPaste={(event) => void addImagesFromPaste(finding, index, event)}
-            onDragOver={(event) => event.preventDefault()}
-            onDrop={(event) => void addImagesFromDrop(finding, index, event)}
-          >
-            <div className="mb-2 flex flex-wrap gap-1.5">
-              {severities.map((severity) => (
+      {findings.map((finding, index) => (
+        <div
+          className="rf-finding-edit-card"
+          key={index}
+          onPaste={(event) => void addImagesFromPaste(finding, index, event)}
+          onDragOver={(event) => event.preventDefault()}
+          onDrop={(event) => void addImagesFromDrop(finding, index, event)}
+        >
+          <div className="rf-finding-sev-bar">
+            {SEVERITIES.map((sev) => {
+              const m = SEV_META[sev];
+              const active = finding.severity === sev;
+              const tKey = sev === "!" ? "fatal" : sev === "+" ? "important" : sev === "A" ? "recurring" : sev === "-" ? "minor" : sev === "?" ? "question" : "note";
+              return (
                 <button
-                  key={severity.value}
+                  key={sev}
                   type="button"
-                  aria-pressed={finding.severity === severity.value}
-                  onClick={() => onChange(index, "severity", severity.value)}
-                  className={`severity-btn ${severity.baseClassName} ${finding.severity === severity.value ? severity.activeClassName : ""}`}
+                  aria-pressed={active}
+                  onClick={() => onChange(index, "severity", sev)}
+                  className={`severity-btn ${m.btnClass}${active ? ` ${m.activeBtnClass}` : ""}`}
                 >
-                  {severity.label}
+                  {t(`findings.${tKey}`)}
                 </button>
-              ))}
-              <button
-                className="btn-danger btn-danger-icon ml-auto"
-                type="button"
-                title={t("findings.remove")}
-                aria-label={t("findings.remove")}
-                onClick={() => onRemove(index)}
-              >
-                <span aria-hidden="true">X</span>
-              </button>
+              );
+            })}
+            <button
+              className="rf-icon-btn danger"
+              style={{ marginLeft: "auto" }}
+              type="button"
+              title={t("findings.remove")}
+              aria-label={t("findings.remove")}
+              onClick={() => onRemove(index)}
+            >
+              <TrashIcon />
+            </button>
+          </div>
+
+          <textarea
+            className={`rf-finding-textarea${errors[index]?.text ? " error" : ""}`}
+            value={finding.text}
+            placeholder={t("findings.descriptionPlaceholder")}
+            onChange={(event) => onChange(index, "text", event.target.value)}
+          />
+          {errors[index]?.text && (
+            <div className="rf-input-error">{errors[index].text}</div>
+          )}
+
+          <div className="rf-drop-zone" style={{ marginTop: 10 }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+              <label className="drop-zone-trigger" style={{ cursor: "pointer" }}>
+                {t("findings.addImage")}
+                <input
+                  className="sr-only"
+                  type="file"
+                  accept={allowedImageTypes.join(",")}
+                  multiple
+                  onChange={(event) => void addImagesFromInput(finding, index, event)}
+                />
+              </label>
+              <span className="muted" style={{ fontSize: 11.5, textAlign: "center" }}>{t("findings.imageHint")}</span>
             </div>
+            <p className="muted" style={{ marginTop: 4, fontSize: 11.5, margin: 0 }}>{t("findings.imageFormats")}</p>
+          </div>
 
-            <textarea
-              className={`input min-h-20 resize-y leading-6 ${errors[index]?.text ? "error-input" : ""}`}
-              value={finding.text}
-              placeholder={t("findings.descriptionPlaceholder")}
-              onChange={(event) => onChange(index, "text", event.target.value)}
-            />
-            {errors[index]?.text ? <span className="danger-text mt-1 block text-xs">{errors[index].text}</span> : null}
-
-            <div className="drop-zone">
-              <div className="drop-zone-content">
-                <label className="drop-zone-trigger cursor-pointer">
-                  {t("findings.addImage")}
-                  <input
-                    className="sr-only"
-                    type="file"
-                    accept={allowedImageTypes.join(",")}
-                    multiple
-                    onChange={(event) => void addImagesFromInput(finding, index, event)}
+          {finding.images.length > 0 && (
+            <div style={{ marginTop: 12, display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))" }}>
+              {finding.images.map((image) => (
+                <div className="sub-card" key={image.id} style={{ padding: 8 }}>
+                  <img
+                    className="image-frame mb-2 h-32 w-full rounded object-contain"
+                    src={image.dataUrl}
+                    alt={image.altText || image.name}
                   />
-                </label>
-                <span className="muted max-w-2xl text-xs">{t("findings.imageHint")}</span>
-              </div>
-              <p className="muted mt-1 text-xs">{t("findings.imageFormats")}</p>
-            </div>
-
-            {finding.images.length ? (
-              <div className="mt-3 grid gap-2 md:grid-cols-2">
-                {finding.images.map((image) => (
-                  <div className="sub-card p-2" key={image.id}>
-                    <img className="image-frame mb-2 h-32 w-full rounded object-contain" src={image.dataUrl} alt={image.altText || image.name} />
-                    <input
-                      className="input mb-2"
-                      value={image.altText}
-                      placeholder={t("findings.altTextPlaceholder")}
-                      onChange={(event) => updateImage(finding, index, image.id, { altText: event.target.value })}
-                    />
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="muted truncate text-xs">{image.name}</span>
-                      <button
-                        className="btn-danger btn-danger-icon"
-                        type="button"
-                        title={t("findings.removeImage")}
-                        aria-label={t("findings.removeImage")}
-                        onClick={() => removeImage(finding, index, image.id)}
-                      >
-                        <span aria-hidden="true">X</span>
-                      </button>
-                    </div>
+                  <input
+                    className="input"
+                    style={{ marginBottom: 8 }}
+                    value={image.altText}
+                    placeholder={t("findings.altTextPlaceholder")}
+                    onChange={(event) => updateImage(finding, index, image.id, { altText: event.target.value })}
+                  />
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                    <span className="muted" style={{ fontSize: 11.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {image.name}
+                    </span>
+                    <button
+                      className="rf-icon-btn danger"
+                      type="button"
+                      title={t("findings.removeImage")}
+                      aria-label={t("findings.removeImage")}
+                      onClick={() => removeImage(finding, index, image.id)}
+                    >
+                      <TrashIcon />
+                    </button>
                   </div>
-                ))}
-              </div>
-            ) : null}
-          </article>
-        ))}
-      </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
 
-      {onAdd ? (
-        <button className="btn-secondary mt-2" type="button" onClick={onAdd}>
-          {t("findings.add")}
-        </button>
-      ) : null}
+      {onAdd && (
+        <div style={{ padding: "12px 18px" }}>
+          <button className="rf-ghost-btn" type="button" onClick={onAdd}>
+            <PlusIcon />
+            <span>{t("findings.add")}</span>
+          </button>
+        </div>
+      )}
     </div>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14H6L5 6" />
+      <path d="M10 11v6M14 11v6" />
+      <path d="M9 6V4h6v2" />
+    </svg>
+  );
+}
+
+function PlusIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+      <path d="M12 5v14M5 12h14" />
+    </svg>
   );
 }
 
 function readImageFile(file: File): Promise<FindingImage> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-
     reader.onload = () => {
       resolve({
         id: crypto.randomUUID(),
@@ -190,10 +234,7 @@ function readImageFile(file: File): Promise<FindingImage> {
 }
 
 function getImageName(file: File): string {
-  if (file.name && !isClipboardImageName(file.name)) {
-    return file.name;
-  }
-
+  if (file.name && !isClipboardImageName(file.name)) return file.name;
   return `capture-${formatTimestamp(new Date())}-${createShortId()}.${getImageExtension(file.type)}`;
 }
 
@@ -208,16 +249,14 @@ function getImageExtension(type: string): string {
 }
 
 function formatTimestamp(date: Date): string {
-  const parts = [
+  return [
     date.getFullYear(),
     date.getMonth() + 1,
     date.getDate(),
     date.getHours(),
     date.getMinutes(),
     date.getSeconds(),
-  ];
-
-  return parts.map((part) => String(part).padStart(2, "0")).join("-");
+  ].map((p) => String(p).padStart(2, "0")).join("-");
 }
 
 function createShortId(): string {

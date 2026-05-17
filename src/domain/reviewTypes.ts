@@ -1,5 +1,9 @@
 export type TabId = "meta" | "schematics" | "bom" | "layout" | "extraDocuments" | "output";
 
+export type MetaSubTab = "encabezado" | "logo" | "resumen" | "participantes";
+
+export type FileSectionTab = "schematics" | "bom" | "layout" | "extraDocuments";
+
 export type FindingSeverity = "!" | "+" | "-" | "?" | "*" | "A";
 
 export interface Participant {

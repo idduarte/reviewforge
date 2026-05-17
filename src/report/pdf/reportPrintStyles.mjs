@@ -1,3 +1,5 @@
+import { brand } from "./brandTokens.mjs";
+
 export function renderReportPrintStyles(fonts = {}) {
   const interRegular = fonts.interRegular ?? "";
   const interMedium = fonts.interMedium ?? interRegular;
@@ -91,13 +93,13 @@ export function renderReportPrintStyles(fonts = {}) {
   --font-ui: "Inter", system-ui, sans-serif;
   --font-content: "IBM Plex Sans", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
-  --color-text: #16202B;
-  --color-muted: #617182;
-  --color-border: #D4DDE7;
-  --color-soft: #F5F7FA;
-  --color-primary: #48667F;
-  --color-primary-dark: #364D60;
-  --color-minor: #3F6E8C;
+  --color-text: ${brand.pdf.text};
+  --color-muted: ${brand.pdf.muted};
+  --color-border: ${brand.pdf.border};
+  --color-soft: ${brand.pdf.soft};
+  --color-primary: ${brand.pdf.primary};
+  --color-primary-dark: ${brand.pdf.primaryDark};
+  --color-accent: ${brand.pdf.accent};
 }
 
 * {
@@ -174,7 +176,7 @@ body {
   justify-content: space-between;
   gap: 8mm;
   padding-top: 0.5mm;
-  border-bottom: 1.6px solid var(--color-minor);
+  border-bottom: 1.6px solid var(--color-accent);
 }
 
 .page-header-left {
@@ -248,16 +250,17 @@ body {
   line-height: 1;
   font-weight: 600;
   letter-spacing: -0.03em;
-  color: #6B7785;
+  color: ${brand.pdf.muted};
 }
 
 .page-wordmark span {
-  color: #3F6E8C;
+  color: ${brand.pdf.accent};
 }
 
 .page-content {
   flex: 1 1 auto;
   min-height: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
@@ -277,7 +280,7 @@ body {
 
 .page-footer-line {
   grid-area: line;
-  border-top: 1.6px solid var(--color-minor);
+  border-top: 1.6px solid var(--color-accent);
   align-self: stretch;
 }
 
@@ -340,11 +343,11 @@ body {
   line-height: 0.94;
   font-weight: 600;
   letter-spacing: -0.04em;
-  color: #6B7785;
+  color: ${brand.pdf.muted};
 }
 
 .cover-wordmark span {
-  color: #3F6E8C;
+  color: ${brand.pdf.accent};
 }
 
 .cover-custom-brand {
@@ -460,6 +463,24 @@ td {
 }
 
 .meeting-summary-body p:last-child {
+  margin-bottom: 0;
+}
+
+.meeting-summary-body ol {
+  margin: 0 0 4mm;
+  padding-left: 5mm;
+}
+
+.meeting-summary-body ol:last-child {
+  margin-bottom: 0;
+}
+
+.meeting-summary-body ol li {
+  margin-bottom: 1.5mm;
+  line-height: 1.5;
+}
+
+.meeting-summary-body ol li:last-child {
   margin-bottom: 0;
 }
 

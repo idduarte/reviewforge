@@ -206,7 +206,7 @@ function buildMeetingSummaryPages(metadata, t) {
 
   const chunks = paginateItems(
     paragraphs.map((paragraph) => ({
-      html: `<p>${escapeHtml(paragraph)}</p>`,
+      html: paragraphToHtml(paragraph),
       units: estimateParagraphUnits(paragraph),
     })),
     SUMMARY_FIRST_PAGE_CAPACITY,
@@ -541,7 +541,7 @@ function paginateItems(items, firstCapacity, followingCapacity) {
 }
 
 function estimateParagraphUnits(text) {
-  return Math.max(2, Math.ceil(String(text || "").length / 320));
+  return Math.max(2, Math.ceil(String(text || "").length / 240));
 }
 
 function estimateFindingUnits(text, references) {
@@ -550,10 +550,20 @@ function estimateFindingUnits(text, references) {
   return 1 + descriptionUnits + annexUnits;
 }
 
+function paragraphToHtml(paragraph) {
+  const lines = paragraph.split(/\n/);
+  const isNumberedList = lines.length > 1 && lines.every((l) => /^\d+\.\s/.test(l.trim()));
+  if (isNumberedList) {
+    const items = lines.map((l) => `<li>${escapeHtml(l.replace(/^\d+\.\s*/, "").trim())}</li>`).join("");
+    return `<ol>${items}</ol>`;
+  }
+  return `<p>${escapeHtml(paragraph.replace(/\n/g, " ").trim())}</p>`;
+}
+
 function splitParagraphs(value) {
   return String(value || "")
     .split(/\n\s*\n/g)
-    .map((paragraph) => paragraph.replace(/\n/g, " ").trim())
+    .map((paragraph) => paragraph.trim())
     .filter(Boolean);
 }
 

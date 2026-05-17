@@ -1,0 +1,119 @@
+{
+  "version": 1,
+  "savedAt": "2026-05-16T10:30:00.000Z",
+  "review": {
+    "metadata": {
+      "reviewTitle": "Revisión SVEC Atlas v2 — Rev. C",
+      "reviewDate": "2026-05-14",
+      "meetingDate": "2026-05-16",
+      "meetingStart": "14:00",
+      "meetingEnd": "17:30",
+      "meetingPlace": "CERN Prevessin, Building 864, Room 1-A15",
+      "meetingSubject": "Revisión de esquemáticos y BOM para Atlas v2",
+      "svnGit": "https://gitlab.cern.ch/atlas/svec-v2",
+      "revision": "3",
+      "meetingSummary": "Se revisaron los esquemáticos principales del módulo de alimentación y la tarjeta base. Se identificaron dos hallazgos bloqueantes relacionados con la polaridad del regulador U4 y el divisor de feedback. El resto de hallazgos son de carácter menor y no bloquean la fabricación.\n\nPróximos pasos: corregir U4, recalcular R17/R18 y actualizar la BOM con footprint de C12.",
+      "companyName": "CERN / Acme Robotics S.L.",
+      "companyLogoDataUrl": ""
+    },
+    "participants": [
+      {
+        "name": "Marta Rivas",
+        "initials": "MR",
+        "role": "Lead reviewer",
+        "email": "marta.rivas@cern.ch"
+      },
+      {
+        "name": "Andrés Solano",
+        "initials": "AS",
+        "role": "Hardware engineer",
+        "email": "a.solano@acme.io"
+      },
+      {
+        "name": "Jakob Kerner",
+        "initials": "JK",
+        "role": "FW / verification",
+        "email": "jakob.kerner@cern.ch"
+      },
+      {
+        "name": "Priya Narang",
+        "initials": "PN",
+        "role": "Quality assurance",
+        "email": "priya.narang@acme.io"
+      }
+    ],
+    "schematics": [
+      {
+        "name": "main_board.sch",
+        "findings": [
+          {
+            "severity": "!",
+            "text": "Inversión de polaridad en el regulador U4 (pin 12). Las entradas VIN y GND del LDO TPS7A47 están permutadas en el símbolo. Provocará daño irreversible al alimentar; bloqueante para fabricación.",
+            "images": []
+          },
+          {
+            "severity": "+",
+            "text": "Divisor de feedback R17/R18 fuera de tolerancia objetivo. Valores actuales 10k/3.3k producen 4.05V; objetivo de diseño 3.30V. Recalcular con tolerancia ±1%.",
+            "images": []
+          }
+        ]
+      },
+      {
+        "name": "power_supply.sch",
+        "findings": [
+          {
+            "severity": "-",
+            "text": "Capacitor de desacople C12 (100nF) sin huella asignada en BOM. Usar 0402 estándar y verificar disponibilidad en JLCPCB.",
+            "images": []
+          }
+        ]
+      }
+    ],
+    "bomFiles": [
+      {
+        "name": "atlas_v2_bom.csv",
+        "findings": [
+          {
+            "severity": "A",
+            "text": "Referencia U7 aparece duplicada en la BOM con distintos valores (10µF y 100nF). Mismo problema que en la revisión anterior Rev. B. Unificar y asignar referencias únicas.",
+            "images": []
+          },
+          {
+            "severity": "?",
+            "text": "El conector J3 (Molex 53261-0471) no aparece en el listado de proveedores aprobados. ¿Se ha verificado disponibilidad con el departamento de compras?",
+            "images": []
+          }
+        ]
+      }
+    ],
+    "layoutFiles": [
+      {
+        "name": "atlas_v2_layout.kicad_pcb",
+        "findings": [
+          {
+            "severity": "-",
+            "text": "Clearance entre las pistas de alta corriente L1 y GND plano insuficiente en la zona del regulador (0.15mm, mínimo recomendado 0.2mm para 2A).",
+            "images": []
+          },
+          {
+            "severity": "*",
+            "text": "Los vias de costuras de GND en la zona RF podrían aumentarse de 0.3mm a 0.4mm de diámetro para mejorar la manufacturabilidad.",
+            "images": []
+          }
+        ]
+      }
+    ],
+    "extraDocumentFiles": [
+      {
+        "name": "TPS7A47_datasheet_SLVSA88.pdf",
+        "findings": [
+          {
+            "severity": "*",
+            "text": "Revisar la figura 22 del datasheet para la configuración correcta de los pines ADJ y NR/SS del TPS7A47. La nota de aplicación recomienda un capacitor de 10nF en NR/SS que no aparece en el esquemático actual.",
+            "images": []
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,12 +1,13 @@
-import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Section } from "./Field";
+import { PageHeader } from "./PageHeader";
+import { FileListView } from "./FileListView";
 import { FindingsEditor } from "./FindingsEditor";
 import type { Finding, LayoutFile } from "../domain/reviewTypes";
 import type { NamedFileErrors, SectionFindingErrors } from "../domain/reviewValidation";
 
 interface LayoutEditorProps {
   files: LayoutFile[];
+  selectedIndex: number;
   errors: NamedFileErrors;
   findingErrors: SectionFindingErrors;
   onAddFile: () => void;
@@ -15,78 +16,66 @@ interface LayoutEditorProps {
   onAddFinding: (fileIndex: number) => void;
   onRemoveFinding: (fileIndex: number, findingIndex: number) => void;
   onFindingChange: <Key extends keyof Finding>(fileIndex: number, findingIndex: number, key: Key, value: Finding[Key]) => void;
+  onSelectFile: (index: number) => void;
 }
 
 export function LayoutEditor({
-  files,
-  errors,
-  findingErrors,
-  onAddFile,
-  onRemoveFile,
-  onFileNameChange,
-  onAddFinding,
-  onRemoveFinding,
-  onFindingChange,
+  files, selectedIndex, errors, findingErrors,
+  onAddFile, onRemoveFile, onFileNameChange,
+  onAddFinding, onRemoveFinding, onFindingChange, onSelectFile,
 }: LayoutEditorProps) {
   const { t } = useTranslation();
-  const gridRef = useRef<HTMLDivElement>(null);
-  const prevLengthRef = useRef(files.length);
-
-  useEffect(() => {
-    if (files.length > prevLengthRef.current) {
-      gridRef.current?.lastElementChild?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    }
-    prevLengthRef.current = files.length;
-  }, [files.length]);
+  const totalFindings = files.reduce((n, f) => n + f.findings.length, 0);
+  const file = files[selectedIndex] ?? null;
 
   return (
-    <Section title={t("layout.title")}>
-      <div className="mb-3 flex justify-end">
-        <button className="btn-secondary" type="button" onClick={onAddFile}>
-          {t("layout.addFile")}
-        </button>
-      </div>
+    <>
+      <PageHeader
+        kicker={t("ui.sectionFiles")}
+        title={t("layout.title")}
+        subtitle={t("layout.subtitle")}
+        tiles={[
+          { label: t("ui.sectionFiles"), value: String(files.length), sub: ".kicad_pcb" },
+          { label: t("ui.findings"), value: String(totalFindings), sub: t("ui.total") },
+        ]}
+        cta={<button className="rf-primary-btn" type="button" onClick={onAddFile}><PlusIcon /><span>{t("layout.addFile")}</span></button>}
+      />
 
-      <div ref={gridRef} className="grid gap-3">
-        {files.map((file, fileIndex) => (
-          <article className="sub-card" key={fileIndex}>
-            <div className="mb-2 grid gap-2 md:grid-cols-[1fr_auto]">
+      {selectedIndex === -1 && (
+        <FileListView files={files} onSelect={onSelectFile} onAdd={onAddFile} addLabel={t("layout.addFile")} formatHint="KiCad · Altium · EAGLE" />
+      )}
+
+      {selectedIndex >= 0 && file && (
+        <section className="rf-file-card">
+          <div className="rf-file-card-header">
+            <div className="rf-file-icon"><DocIcon /></div>
+            <div style={{ flex: 1, minWidth: 0 }}>
               <input
-                className={`input font-medium ${errors[fileIndex]?.name ? "error-input" : ""}`}
+                className={`rf-cell-input mono${errors[selectedIndex]?.name ? " error" : ""}`}
+                style={{ fontWeight: 600, fontSize: 13.5 }}
                 value={file.name}
                 placeholder={t("layout.filePlaceholder")}
-                onChange={(event) => onFileNameChange(fileIndex, event.target.value)}
+                onChange={(e) => onFileNameChange(selectedIndex, e.target.value)}
               />
-              <button
-                className="btn-danger btn-danger-icon"
-                type="button"
-                title={t("layout.removeFile")}
-                aria-label={t("layout.removeFile")}
-                onClick={() => onRemoveFile(fileIndex)}
-              >
-                <span aria-hidden="true">X</span>
-              </button>
-              {errors[fileIndex]?.name ? <span className="danger-text mt-1 block text-xs md:col-span-2">{errors[fileIndex].name}</span> : null}
+              {errors[selectedIndex]?.name && <div className="rf-input-error" style={{ paddingLeft: 8 }}>{errors[selectedIndex].name}</div>}
             </div>
-
-            <FindingsEditor
-              findings={file.findings}
-              errors={findingErrors[fileIndex]}
-              onAdd={() => onAddFinding(fileIndex)}
-              onRemove={(findingIndex) => onRemoveFinding(fileIndex, findingIndex)}
-              onChange={(findingIndex, key, value) => onFindingChange(fileIndex, findingIndex, key, value)}
-            />
-          </article>
-        ))}
-      </div>
-
-      {files.length > 0 && (
-        <div className="mt-3 flex justify-end">
-          <button className="btn-secondary" type="button" onClick={onAddFile}>
-            {t("layout.addFile")}
-          </button>
-        </div>
+            <span className="rf-findings-pill">{file.findings.length} {file.findings.length === 1 ? t("ui.finding") : t("ui.findings")}</span>
+            <button className="rf-ghost-btn sm" type="button" onClick={() => onAddFinding(selectedIndex)}><PlusIcon size={12} /><span>{t("layout.addFinding")}</span></button>
+            <button className="rf-icon-btn danger" type="button" title={t("layout.removeFile")} onClick={() => onRemoveFile(selectedIndex)}><TrashIcon /></button>
+          </div>
+          <FindingsEditor findings={file.findings} errors={findingErrors[selectedIndex]} onRemove={(fi) => onRemoveFinding(selectedIndex, fi)} onChange={(fi, key, value) => onFindingChange(selectedIndex, fi, key, value)} />
+        </section>
       )}
-    </Section>
+    </>
   );
+}
+
+function PlusIcon({ size = 16 }: { size?: number }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>;
+}
+function TrashIcon() {
+  return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6M14 11v6" /><path d="M9 6V4h6v2" /></svg>;
+}
+function DocIcon() {
+  return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>;
 }

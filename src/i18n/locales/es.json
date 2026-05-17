@@ -6,6 +6,26 @@
     "tagline": "Plataforma de Revisión e Informes de Diseño Electrónico",
     "summary": "<strong>ReviewForge</strong> es una Aplicación web open source bajo licencia <u><strong><a href=\"https://www.apache.org/licenses/LICENSE-2.0\">Apache 2.0</a></strong></u>, pensada para acompañarte en todo el proceso de revisión de diseño de circuitos impresos (PCB). Te ayuda a estructurar tus revisiones, identificar y documentar hallazgos con claridad, y mantener la trazabilidad en cada etapa, aplicando una metodología formal que mejora la calidad del análisis técnico y la consistencia de los informes.<br><br>© 2026 Ivan Dario Duarte Brito."
   },
+  "ui": {
+    "sectionProject": "Proyecto",
+    "sectionFiles": "Archivos",
+    "breadcrumbFiles": "Archivos",
+    "searchPlaceholder": "Buscar hallazgo…",
+    "completed": "Completado",
+    "required": "requeridos",
+    "errors": "Errores",
+    "toFix": "por corregir",
+    "preview": "Vista previa",
+    "logo": "Logo",
+    "logoLoaded": "cargado",
+    "noLogo": "sin logo",
+    "characters": "Caracteres",
+    "drafted": "redactado",
+    "empty": "vacío",
+    "finding": "hallazgo",
+    "findings": "hallazgos",
+    "total": "total"
+  },
   "tabs": {
     "meta": "Encabezado",
     "schematics": "Esquemáticos",
@@ -19,7 +39,9 @@
     "save": "Guardar avance",
     "restore": "Restaurar avance",
     "print": "Imprimir / Guardar PDF",
-    "docs": "Guía de uso"
+    "docs": "Guía de uso",
+    "exportPdf": "Exportar PDF",
+    "exportPdfDisabled": "Completa los campos requeridos para exportar"
   },
   "hint": {
     "docsTitle": "¿Primera vez aquí?",
@@ -33,6 +55,14 @@
     "logoError": "No se pudo leer el logo."
   },
   "meta": {
+    "generalDesc": "Información general que aparecerá en la portada del informe PDF.",
+    "removeLogo": "Quitar",
+    "addLogo": "Arrastra el logo aquí o",
+    "selectFile": "seleccionar archivo",
+    "sub_encabezado": "Información General",
+    "sub_logo": "Información empresa",
+    "sub_resumen": "Resumen de la reunión",
+    "sub_participantes": "Participantes",
     "generalTitle": "Información general",
     "reviewTitle": "Título de la revisión",
     "reviewTitlePlaceholder": "Ej: revisión de esquemáticos SVEC",
@@ -60,12 +90,27 @@
   },
   "participants": {
     "title": "Participantes",
+    "subtitle": "Lista de personas que intervienen en la revisión. Aparecerán en la sección de firmas del PDF.",
+    "tileCount": "Participantes",
+    "tileRoles": "Roles",
+    "tileDomains": "Dominios",
+    "name": "Nombre",
+    "initialsCol": "Iniciales",
+    "role": "Rol",
+    "email": "Email",
+    "addName": "Añadir nombre…",
+    "initialsHint": "Las iniciales se generan automáticamente desde el nombre. Puedes editarlas si hay conflictos.",
+    "rowsLabel": "filas",
+    "manualOrder": "orden manual",
+    "rolesSummary": "Resumen de roles",
+    "rolesFromTable": "asignados desde la tabla",
     "namePlaceholder": "Nombre completo",
     "initialsPlaceholder": "Iniciales",
     "rolePlaceholder": "Rol/cargo",
     "emailPlaceholder": "Email",
     "remove": "Eliminar participante",
-    "add": "+ Añadir participante"
+    "add": "+ Añadir participante",
+    "distintos": "distintos"
   },
   "findings": {
     "fatal": "Fatal",
@@ -85,25 +130,33 @@
   },
   "schematics": {
     "title": "Archivos de esquemáticos",
+    "subtitle": "Añade los archivos de esquemático y registra los hallazgos detectados durante la revisión.",
     "addFile": "+ Añadir archivo",
+    "addFinding": "Añadir hallazgo",
     "filePlaceholder": "Nombre del archivo (Ej: XXX_TOP.SchDoc)",
     "removeFile": "Eliminar archivo"
   },
   "bom": {
     "title": "Archivos BOM",
+    "subtitle": "Añade los archivos de lista de materiales y registra hallazgos.",
     "addFile": "+ Añadir archivo BOM",
+    "addFinding": "Añadir hallazgo",
     "filePlaceholder": "Nombre del archivo BOM (Ej: XXX_BOM.xlsx)",
     "removeFile": "Eliminar archivo BOM"
   },
   "layout": {
     "title": "Archivos de layout",
+    "subtitle": "Añade los archivos de layout PCB y registra los hallazgos.",
     "addFile": "+ Añadir archivo",
+    "addFinding": "Añadir hallazgo",
     "filePlaceholder": "Nombre del archivo (Ej: XXX_Layout.PcbDoc)",
     "removeFile": "Eliminar archivo"
   },
   "extraDocuments": {
     "title": "Documentos extra",
+    "subtitle": "Documentación adicional relacionada con la revisión.",
     "addFile": "+ Añadir documento",
+    "addFinding": "Añadir hallazgo",
     "filePlaceholder": "Nombre del documento (Ej: informe térmico, checklist, nota técnica)",
     "removeFile": "Eliminar documento"
   },

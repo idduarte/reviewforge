@@ -23,12 +23,12 @@ const defaultLang =
     ? savedLang
     : supportedLangs.includes(browserCode)
       ? browserCode
-      : supportedLangs[0] ?? "en";
+      : "en";
 
 i18n.use(initReactI18next).init({
   resources,
   lng: defaultLang,
-  fallbackLng: supportedLangs[0] ?? "en",
+  fallbackLng: "en",
   interpolation: { escapeValue: false },
 });
 
