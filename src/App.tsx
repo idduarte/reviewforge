@@ -186,6 +186,7 @@ export default function App() {
         selectedFile={selectedFile}
         onSelectFile={handleSelectFile}
         review={review}
+        validation={validation}
         canPrint={validation.isValid}
         onSave={saveProgress}
         onRestore={restoreProgress}
@@ -255,6 +256,7 @@ export default function App() {
           }
           onSchematicFindingChange={updateSchematicFinding}
           onSelectFile={(i) => setSelectedFile((prev) => ({ ...prev, schematics: i }))}
+          participants={review.participants}
         />
         )}
 
@@ -301,6 +303,7 @@ export default function App() {
           }
           onFindingChange={updateBomFinding}
           onSelectFile={(i) => setSelectedFile((prev) => ({ ...prev, bom: i }))}
+          participants={review.participants}
         />
         )}
 
@@ -347,6 +350,7 @@ export default function App() {
           }
           onFindingChange={updateLayoutFinding}
           onSelectFile={(i) => setSelectedFile((prev) => ({ ...prev, layout: i }))}
+          participants={review.participants}
         />
         )}
 
@@ -393,6 +397,7 @@ export default function App() {
           }
           onFindingChange={updateExtraDocumentFinding}
           onSelectFile={(i) => setSelectedFile((prev) => ({ ...prev, extraDocuments: i }))}
+          participants={review.participants}
         />
         )}
 

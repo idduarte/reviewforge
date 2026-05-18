@@ -56,6 +56,8 @@ export function collectAppendices(reportJson, t) {
             fileName: file.name || fallbackName,
             severity: finding.severity,
             findingText: finding.text || tFn("pdf.findingFallback"),
+            reportedBy: finding.reportedBy ?? [],
+            assignedTo: finding.assignedTo ?? [],
             image,
             findingKey: buildFindingKey(section.key, fileIndex, findingIndex),
           });
@@ -109,9 +111,9 @@ function buildReportPages(review, appendices, generatedAt, t) {
     buildParticipantsPage(review, t),
     ...buildMeetingSummaryPages(review.metadata, t),
     ...SECTION_DEFINITIONS.flatMap((section) =>
-      buildSectionPages(review.metadata, section, review[section.key] ?? [], appendices, t),
+      buildSectionPages(review.metadata, section, review[section.key] ?? [], appendices, review.participants ?? [], t),
     ),
-    ...buildAppendixPages(review.metadata, appendices, t),
+    ...buildAppendixPages(review.metadata, appendices, review.participants ?? [], t),
   ];
 }
 
@@ -221,9 +223,9 @@ function buildMeetingSummaryPages(metadata, t) {
   }));
 }
 
-function buildSectionPages(metadata, section, files, appendices, t) {
+function buildSectionPages(metadata, section, files, appendices, participants, t) {
   const sectionTitle = t(section.titleKey);
-  const fileChunks = buildFileChunks(section, files, appendices, t);
+  const fileChunks = buildFileChunks(section, files, appendices, participants, t);
 
   if (!fileChunks.length) {
     return [
@@ -254,7 +256,7 @@ function buildSectionPages(metadata, section, files, appendices, t) {
   }));
 }
 
-function buildAppendixPages(metadata, appendices, t) {
+function buildAppendixPages(metadata, appendices, participants, t) {
   const title = t("pdf.annexes");
 
   if (!appendices.length) {
@@ -278,11 +280,11 @@ function buildAppendixPages(metadata, appendices, t) {
     title: index === 0 ? title : `${title} ${t("pdf.continuation")}`,
     description: index === 0 ? t("pdf.annexesDescription") : t("pdf.annexesContinuation"),
     footerLabel: title,
-    content: renderAppendixCard(appendix, t),
+    content: renderAppendixCard(appendix, participants, t),
   }));
 }
 
-function buildFileChunks(section, files, appendices, t) {
+function buildFileChunks(section, files, appendices, participants, t) {
   const fallbackName = t(section.fallbackKey);
   const chunks = [];
 
@@ -306,7 +308,7 @@ function buildFileChunks(section, files, appendices, t) {
 
       return {
         units: estimateFindingUnits(finding.text, references),
-        html: renderFindingRow(finding, references, t),
+        html: renderFindingRow(finding, references, participants, t),
       };
     });
 
@@ -436,21 +438,39 @@ function renderFileReviewBlock(fileName, rowHtml, continuation, t) {
 </article>`.trim();
 }
 
-function renderFindingRow(finding, references, t) {
+function renderFindingRow(finding, references, participants, t) {
   const severity = mapSeverity(finding.severity, t);
+  const reportedBy = finding.reportedBy ?? [];
+  const assignedTo = finding.assignedTo ?? [];
+  const peopleLines = [
+    reportedBy.length ? `${t("pdf.reportedByLabel")}: ${escapeHtml(resolveNames(reportedBy, participants))}` : "",
+    assignedTo.length ? `${t("pdf.assignedToLabel")}: ${escapeHtml(resolveNames(assignedTo, participants))}` : "",
+  ].filter(Boolean);
+
+  const descriptionHtml = `${escapeHtml(finding.text || t("pdf.noDescription"))}${
+    peopleLines.length ? `<div class="finding-people">${peopleLines.map((l) => `<span>${l}</span>`).join("")}</div>` : ""
+  }`;
 
   return `
 <tr class="finding-row">
   <td>
     <span class="severity-badge" style="background:${severity.color}; color:${severity.textColor};">${escapeHtml(severity.label)}</span>
   </td>
-  <td class="finding-description-cell">${escapeHtml(finding.text || t("pdf.noDescription"))}</td>
+  <td class="finding-description-cell">${descriptionHtml}</td>
   <td class="finding-annexes-cell">${references.length ? `<span class="annex-ref">${escapeHtml(references.join(", "))}</span>` : "-"}</td>
 </tr>`.trim();
 }
 
-function renderAppendixCard(appendix, t) {
+function resolveNames(initials, participants) {
+  return initials
+    .map((ini) => participants.find((p) => (p.initials || p.name.slice(0, 2).toUpperCase()) === ini)?.name ?? ini)
+    .join(", ");
+}
+
+function renderAppendixCard(appendix, participants, t) {
   const severity = mapSeverity(appendix.severity, t);
+  const reportedBy = appendix.reportedBy ?? [];
+  const assignedTo = appendix.assignedTo ?? [];
 
   return `
 <article class="appendix-card" id="${appendix.id}">
@@ -463,6 +483,8 @@ function renderAppendixCard(appendix, t) {
       ${renderAppendixRow(t("pdf.sectionOrigin"), appendix.sectionTitle)}
       ${renderAppendixRow(t("pdf.fileOrigin"), appendix.fileName)}
       ${renderAppendixRow(t("pdf.severityLabel"), `<span class="severity-badge" style="background:${severity.color}; color:${severity.textColor};">${escapeHtml(severity.label)}</span>`)}
+      ${reportedBy.length ? renderAppendixRow(t("pdf.reportedByLabel"), resolveNames(reportedBy, participants)) : ""}
+      ${assignedTo.length ? renderAppendixRow(t("pdf.assignedToLabel"), resolveNames(assignedTo, participants)) : ""}
       ${renderAppendixRow(t("pdf.imageLabel"), appendix.image.name || t("pdf.noImageName"), true)}
       ${renderAppendixRow(t("pdf.findingLabel"), appendix.findingText)}
     </div>

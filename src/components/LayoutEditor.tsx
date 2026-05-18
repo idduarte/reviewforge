@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { PageHeader } from "./PageHeader";
 import { FileListView } from "./FileListView";
 import { FindingsEditor } from "./FindingsEditor";
-import type { Finding, LayoutFile } from "../domain/reviewTypes";
+import type { Finding, LayoutFile, Participant } from "../domain/reviewTypes";
 import type { NamedFileErrors, SectionFindingErrors } from "../domain/reviewValidation";
 
 interface LayoutEditorProps {
@@ -17,12 +17,14 @@ interface LayoutEditorProps {
   onRemoveFinding: (fileIndex: number, findingIndex: number) => void;
   onFindingChange: <Key extends keyof Finding>(fileIndex: number, findingIndex: number, key: Key, value: Finding[Key]) => void;
   onSelectFile: (index: number) => void;
+  participants?: Participant[];
 }
 
 export function LayoutEditor({
   files, selectedIndex, errors, findingErrors,
   onAddFile, onRemoveFile, onFileNameChange,
   onAddFinding, onRemoveFinding, onFindingChange, onSelectFile,
+  participants,
 }: LayoutEditorProps) {
   const { t } = useTranslation();
   const totalFindings = files.reduce((n, f) => n + f.findings.length, 0);
@@ -63,7 +65,7 @@ export function LayoutEditor({
             <button className="rf-ghost-btn sm" type="button" onClick={() => onAddFinding(selectedIndex)}><PlusIcon size={12} /><span>{t("layout.addFinding")}</span></button>
             <button className="rf-icon-btn danger" type="button" title={t("layout.removeFile")} onClick={() => onRemoveFile(selectedIndex)}><TrashIcon /></button>
           </div>
-          <FindingsEditor findings={file.findings} errors={findingErrors[selectedIndex]} onRemove={(fi) => onRemoveFinding(selectedIndex, fi)} onChange={(fi, key, value) => onFindingChange(selectedIndex, fi, key, value)} />
+          <FindingsEditor findings={file.findings} participants={participants} errors={findingErrors[selectedIndex]} onRemove={(fi) => onRemoveFinding(selectedIndex, fi)} onChange={(fi, key, value) => onFindingChange(selectedIndex, fi, key, value)} />
         </section>
       )}
     </>

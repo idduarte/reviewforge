@@ -24,7 +24,7 @@ export function createParticipant(): Participant {
 }
 
 export function createFinding(): Finding {
-  return { severity: "-", text: "", images: [] };
+  return { severity: "-", text: "", images: [], reportedBy: [], assignedTo: [] };
 }
 
 export function createSchematic(): SchematicFile {

@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { PageHeader } from "./PageHeader";
 import { FileListView } from "./FileListView";
 import { FindingsEditor } from "./FindingsEditor";
-import type { Finding, SchematicFile } from "../domain/reviewTypes";
+import type { Finding, SchematicFile, Participant } from "../domain/reviewTypes";
 import type { NamedFileErrors, SectionFindingErrors } from "../domain/reviewValidation";
 
 interface SchematicsEditorProps {
@@ -17,12 +17,14 @@ interface SchematicsEditorProps {
   onRemoveSchematicFinding: (schematicIndex: number, findingIndex: number) => void;
   onSchematicFindingChange: <Key extends keyof Finding>(schematicIndex: number, findingIndex: number, key: Key, value: Finding[Key]) => void;
   onSelectFile: (index: number) => void;
+  participants?: Participant[];
 }
 
 export function SchematicsEditor({
   schematics, selectedIndex, errors, findingErrors,
   onAddSchematic, onRemoveSchematic, onSchematicNameChange,
   onAddSchematicFinding, onRemoveSchematicFinding, onSchematicFindingChange, onSelectFile,
+  participants,
 }: SchematicsEditorProps) {
   const { t } = useTranslation();
   const totalFindings = schematics.reduce((n, s) => n + s.findings.length, 0);
@@ -77,6 +79,7 @@ export function SchematicsEditor({
           </div>
           <FindingsEditor
             findings={file.findings}
+            participants={participants}
             errors={findingErrors[selectedIndex]}
             onRemove={(fi) => onRemoveSchematicFinding(selectedIndex, fi)}
             onChange={(fi, key, value) => onSchematicFindingChange(selectedIndex, fi, key, value)}
