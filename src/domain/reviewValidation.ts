@@ -4,7 +4,7 @@ import i18n from "../i18n";
 export type MetadataErrors = Partial<Record<keyof ReviewMetadata, string>>;
 export type ParticipantErrors = Array<Partial<Record<keyof Participant, string>>>;
 export type NamedFileErrors = Array<{ name?: string }>;
-export type FindingErrors = Array<{ text?: string }>;
+export type FindingErrors = Array<{ text?: string; reportedBy?: string; assignedTo?: string }>;
 export type SectionFindingErrors = Array<FindingErrors>;
 
 export interface ReviewValidationResult {
@@ -43,10 +43,11 @@ export function validateReview(review: Review): ReviewValidationResult {
   const bomFiles = review.bomFiles.map(validateNamedFile);
   const layoutFiles = review.layoutFiles.map(validateNamedFile);
   const extraDocumentFiles = review.extraDocumentFiles.map(validateNamedFile);
-  const schematicFindings = review.schematics.map((file) => file.findings.map(validateFinding));
-  const bomFindings = review.bomFiles.map((file) => file.findings.map(validateFinding));
-  const layoutFindings = review.layoutFiles.map((file) => file.findings.map(validateFinding));
-  const extraDocumentFindings = review.extraDocumentFiles.map((file) => file.findings.map(validateFinding));
+  const hasParticipants = review.participants.length > 0;
+  const schematicFindings = review.schematics.map((file) => file.findings.map((f) => validateFinding(f, hasParticipants)));
+  const bomFindings = review.bomFiles.map((file) => file.findings.map((f) => validateFinding(f, hasParticipants)));
+  const layoutFindings = review.layoutFiles.map((file) => file.findings.map((f) => validateFinding(f, hasParticipants)));
+  const extraDocumentFindings = review.extraDocumentFiles.map((file) => file.findings.map((f) => validateFinding(f, hasParticipants)));
   const participantList = review.participants.length === 0 ? i18n.t("validation.noParticipants") : undefined;
   const hasParticipantErrors = participants.some((participantErrors) => Object.keys(participantErrors).length > 0);
   const hasFileErrors = [schematics, bomFiles, layoutFiles, extraDocumentFiles]
@@ -114,10 +115,21 @@ function validateNamedFile(file: SchematicFile | BomFile | LayoutFile | ExtraDoc
   return {};
 }
 
-function validateFinding(finding: Finding): { text?: string } {
+function validateFinding(finding: Finding, hasParticipants: boolean): { text?: string; reportedBy?: string; assignedTo?: string } {
+  const errors: { text?: string; reportedBy?: string; assignedTo?: string } = {};
+
   if (!finding.text.trim()) {
-    return { text: i18n.t("validation.findingRequired") };
+    errors.text = i18n.t("validation.findingRequired");
   }
 
-  return {};
+  if (hasParticipants) {
+    if (!finding.reportedBy?.length) {
+      errors.reportedBy = i18n.t("validation.reportedByRequired");
+    }
+    if (!finding.assignedTo?.length) {
+      errors.assignedTo = i18n.t("validation.assignedToRequired");
+    }
+  }
+
+  return errors;
 }

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { FileSectionTab, MetaSubTab, Review, TabId } from "../domain/reviewTypes";
+import type { ReviewValidationResult } from "../domain/reviewValidation";
 
 interface SidebarProps {
   activeTab: TabId;
@@ -10,6 +11,7 @@ interface SidebarProps {
   selectedFile: Record<FileSectionTab, number>;
   onSelectFile: (tab: FileSectionTab, index: number) => void;
   review: Review;
+  validation: ReviewValidationResult;
   canPrint: boolean;
   onSave: () => void;
   onRestore: (file: File) => void;
@@ -25,8 +27,39 @@ const FILE_SECTIONS: Array<{ tab: TabId; key: keyof Review }> = [
   { tab: "extraDocuments", key: "extraDocumentFiles" },
 ];
 
-export function Sidebar({ activeTab, onTabChange, metaSubTab, onMetaSubTabChange, selectedFile, onSelectFile, review, canPrint, onSave, onRestore, onPrint }: SidebarProps) {
+export function Sidebar({ activeTab, onTabChange, metaSubTab, onMetaSubTabChange, selectedFile, onSelectFile, review, validation, canPrint, onSave, onRestore, onPrint }: SidebarProps) {
   const { t, i18n } = useTranslation();
+
+  const encabezadoFields: Array<keyof typeof validation.metadata> = [
+    "reviewTitle", "reviewDate", "meetingDate", "meetingStart", "meetingEnd", "meetingPlace", "meetingSubject", "revision",
+  ];
+
+  const metaSubHasError: Record<string, boolean> = {
+    encabezado: encabezadoFields.some((k) => Boolean(validation.metadata[k])),
+    logo: false,
+    resumen: false,
+    participantes: validation.participants.some((e) => Object.keys(e).length > 0) || Boolean(validation.participantList),
+  };
+
+  const tabHasError: Record<string, boolean> = {
+    meta: Object.values(metaSubHasError).some(Boolean),
+    schematics: validation.schematics.some((e) => Object.keys(e).length > 0)
+      || validation.schematicFindings.some((f) => f.some((e) => Object.keys(e).length > 0)),
+    bom: validation.bomFiles.some((e) => Object.keys(e).length > 0)
+      || validation.bomFindings.some((f) => f.some((e) => Object.keys(e).length > 0)),
+    layout: validation.layoutFiles.some((e) => Object.keys(e).length > 0)
+      || validation.layoutFindings.some((f) => f.some((e) => Object.keys(e).length > 0)),
+    extraDocuments: validation.extraDocumentFiles.some((e) => Object.keys(e).length > 0)
+      || validation.extraDocumentFindings.some((f) => f.some((e) => Object.keys(e).length > 0)),
+  };
+
+  function fileHasError(tab: string, i: number): boolean {
+    if (tab === "schematics") return Object.keys(validation.schematics[i] ?? {}).length > 0 || (validation.schematicFindings[i] ?? []).some((e) => Object.keys(e).length > 0);
+    if (tab === "bom") return Object.keys(validation.bomFiles[i] ?? {}).length > 0 || (validation.bomFindings[i] ?? []).some((e) => Object.keys(e).length > 0);
+    if (tab === "layout") return Object.keys(validation.layoutFiles[i] ?? {}).length > 0 || (validation.layoutFindings[i] ?? []).some((e) => Object.keys(e).length > 0);
+    if (tab === "extraDocuments") return Object.keys(validation.extraDocumentFiles[i] ?? {}).length > 0 || (validation.extraDocumentFindings[i] ?? []).some((e) => Object.keys(e).length > 0);
+    return false;
+  }
 
   const [langOpen, setLangOpen] = useState(false);
   const langRef = useRef<HTMLDivElement>(null);
@@ -143,6 +176,7 @@ export function Sidebar({ activeTab, onTabChange, metaSubTab, onMetaSubTabChange
           <button className="sb-nav-label-btn" onClick={() => handleTabClick("meta")}>
             {t("tabs.meta")}
           </button>
+          {tabHasError["meta"] && <span className="sb-error-dot" aria-hidden="true" />}
         </div>
 
         {open["meta"] && (
@@ -159,6 +193,7 @@ export function Sidebar({ activeTab, onTabChange, metaSubTab, onMetaSubTabChange
                 >
                   <span className={`sb-sub-dot${isActive ? " sb-sub-dot-active" : ""}`} />
                   <span className="sb-sub-file-name">{label}</span>
+                  {metaSubHasError[key] && <span className="sb-error-dot" aria-hidden="true" />}
                 </button>
               );
             })}
@@ -197,6 +232,7 @@ export function Sidebar({ activeTab, onTabChange, metaSubTab, onMetaSubTabChange
                 {fileCount > 0 && (
                   <span className="sb-badge">{fileCount}</span>
                 )}
+                {tabHasError[tab] && <span className="sb-error-dot" aria-hidden="true" />}
               </div>
 
               {isOpen && files.length > 0 && (
@@ -212,6 +248,7 @@ export function Sidebar({ activeTab, onTabChange, metaSubTab, onMetaSubTabChange
                       >
                         <span className={`sb-sub-dot${isFileActive ? " sb-sub-dot-active" : ""}`} />
                         <span className="sb-sub-file-name">{name}</span>
+                        {fileHasError(tab, i) && <span className="sb-error-dot" aria-hidden="true" />}
                       </button>
                     );
                   })}

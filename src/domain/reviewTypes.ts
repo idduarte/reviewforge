@@ -17,6 +17,8 @@ export interface Finding {
   severity: FindingSeverity;
   text: string;
   images: FindingImage[];
+  reportedBy: string[];
+  assignedTo: string[];
 }
 
 export interface FindingImage {

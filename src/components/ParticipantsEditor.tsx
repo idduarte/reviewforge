@@ -23,7 +23,7 @@ function deriveInitials(name: string): string {
     .trim()
     .split(/\s+/)
     .map((part) => part[0]?.toUpperCase() ?? "")
-    .slice(0, 2)
+    .slice(0, 4)
     .join("");
 }
 
@@ -92,8 +92,8 @@ export function ParticipantsEditor({ participants, errors, listError, onAdd, onR
             {participants.map((participant, index) => (
               <tr className="rf-tr" key={index}>
                 <td className="rf-td">
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, paddingLeft: 6 }}>
-                    <div className="rf-avatar" style={{ background: getAvatarColor(index) }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 12, paddingLeft: 6 }}>
+                    <div className="rf-avatar" style={{ background: getAvatarColor(index), marginTop: 1 }}>
                       {participant.initials || deriveInitials(participant.name) || "?"}
                     </div>
                     <input
@@ -102,7 +102,13 @@ export function ParticipantsEditor({ participants, errors, listError, onAdd, onR
                       value={participant.name}
                       placeholder={t("participants.namePlaceholder")}
                       aria-invalid={Boolean(errors[index]?.name)}
-                      onChange={(e) => onChange(index, "name", e.target.value)}
+                      onChange={(e) => {
+                        const newName = e.target.value;
+                        onChange(index, "name", newName);
+                        if (!participant.initials || participant.initials === deriveInitials(participant.name)) {
+                          onChange(index, "initials", deriveInitials(newName));
+                        }
+                      }}
                     />
                   </div>
                   {errors[index]?.name && <div className="rf-input-error" style={{ paddingLeft: 42 }}>{errors[index].name}</div>}
@@ -129,8 +135,8 @@ export function ParticipantsEditor({ participants, errors, listError, onAdd, onR
                   {errors[index]?.role && <div className="rf-input-error">{errors[index].role}</div>}
                 </td>
                 <td className="rf-td">
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <span style={{ color: "#94a3b8", paddingLeft: 4, flexShrink: 0 }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
+                    <span style={{ color: "#94a3b8", paddingLeft: 4, flexShrink: 0, paddingTop: 7 }}>
                       <MailIcon />
                     </span>
                     <input

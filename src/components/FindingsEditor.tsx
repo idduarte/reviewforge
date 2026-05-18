@@ -1,6 +1,7 @@
 import type { ClipboardEvent, DragEvent } from "react";
 import { useTranslation } from "react-i18next";
-import type { Finding, FindingImage, FindingSeverity } from "../domain/reviewTypes";
+import type { TFunction } from "i18next";
+import type { Finding, FindingImage, FindingSeverity, Participant } from "../domain/reviewTypes";
 import type { FindingErrors } from "../domain/reviewValidation";
 
 const allowedImageTypes = ["image/png", "image/jpeg", "image/webp"];
@@ -8,6 +9,7 @@ const maxImageSizeBytes = 2 * 1024 * 1024;
 
 interface FindingsEditorProps {
   findings: Finding[];
+  participants?: Participant[];
   errors?: FindingErrors;
   onAdd?: () => void;
   onRemove: (index: number) => void;
@@ -45,7 +47,7 @@ export function SevPill({ severity }: { severity: FindingSeverity }) {
   );
 }
 
-export function FindingsEditor({ findings, errors = [], onAdd, onRemove, onChange }: FindingsEditorProps) {
+export function FindingsEditor({ findings, participants = [], errors = [], onAdd, onRemove, onChange }: FindingsEditorProps) {
   const { t } = useTranslation();
 
   function restoreScrollPosition(scrollHost: Element | null, scrollTop: number) {
@@ -150,6 +152,10 @@ export function FindingsEditor({ findings, errors = [], onAdd, onRemove, onChang
             </button>
           </div>
 
+          {participants.length > 0 && (
+            <ParticipantRow field="reportedBy" finding={finding} index={index} participants={participants} error={errors[index]?.reportedBy} onChange={onChange} t={t} />
+          )}
+
           <textarea
             className={`rf-finding-textarea${errors[index]?.text ? " error" : ""}`}
             value={finding.text}
@@ -158,6 +164,10 @@ export function FindingsEditor({ findings, errors = [], onAdd, onRemove, onChang
           />
           {errors[index]?.text && (
             <div className="rf-input-error">{errors[index].text}</div>
+          )}
+
+          {participants.length > 0 && (
+            <ParticipantRow field="assignedTo" finding={finding} index={index} participants={participants} error={errors[index]?.assignedTo} onChange={onChange} t={t} />
           )}
 
           <div className="rf-drop-zone" style={{ marginTop: 10 }}>
@@ -220,6 +230,45 @@ export function FindingsEditor({ findings, errors = [], onAdd, onRemove, onChang
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+function ParticipantRow({ field, finding, index, participants, error, onChange, t }: {
+  field: "reportedBy" | "assignedTo";
+  finding: Finding;
+  index: number;
+  participants: Participant[];
+  error?: string;
+  onChange: <Key extends keyof Finding>(index: number, key: Key, value: Finding[Key]) => void;
+  t: TFunction;
+}) {
+  return (
+    <div>
+      <div className={`rf-assignees-row${error ? " rf-assignees-row--error" : ""}`}>
+        <span className="rf-assignees-label">{t(`findings.${field}`)}</span>
+        <div className="rf-assignees-chips">
+          {participants.map((p) => {
+            const initials = p.initials || p.name.slice(0, 2).toUpperCase();
+            const active = (finding[field] ?? []).includes(initials);
+            return (
+              <button
+                key={initials}
+                type="button"
+                title={p.name}
+                className={`rf-assignee-chip${active ? " active" : ""}`}
+                onClick={() => {
+                  const current = finding[field] ?? [];
+                  onChange(index, field, active ? current.filter((a) => a !== initials) : [...current, initials]);
+                }}
+              >
+                {initials}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      {error && <div className="rf-input-error" style={{ marginTop: 3 }}>{error}</div>}
     </div>
   );
 }

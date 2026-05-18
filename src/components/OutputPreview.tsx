@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
-import type { Finding, FindingImage, Review } from "../domain/reviewTypes";
+import type { Finding, FindingImage, Participant, Review } from "../domain/reviewTypes";
 import type { ReviewValidationResult } from "../domain/reviewValidation";
 import { markdownToHtml } from "../utils/markdownToHtml";
 
@@ -124,10 +124,10 @@ function MarkdownSummary({ review, t }: { review: Review; t: TFunction }) {
         </table>
       </div>
 
-      <RenderedFileSection sectionKey="schematics" title={t("output.schematicsTitle")} files={review.schematics} fallbackName={t("output.schematicFallback")} annexes={annexes} t={t} />
-      <RenderedFileSection sectionKey="bom" title={t("output.bomTitle")} files={review.bomFiles} fallbackName={t("output.bomFallback")} annexes={annexes} t={t} />
-      <RenderedFileSection sectionKey="layout" title={t("output.layoutTitle")} files={review.layoutFiles} fallbackName={t("output.layoutFallback")} annexes={annexes} t={t} />
-      <RenderedFileSection sectionKey="extraDocuments" title={t("output.extraDocumentsTitle")} files={review.extraDocumentFiles} fallbackName={t("output.extraDocumentFallback")} annexes={annexes} t={t} />
+      <RenderedFileSection sectionKey="schematics" title={t("output.schematicsTitle")} files={review.schematics} fallbackName={t("output.schematicFallback")} annexes={annexes} participants={review.participants} t={t} />
+      <RenderedFileSection sectionKey="bom" title={t("output.bomTitle")} files={review.bomFiles} fallbackName={t("output.bomFallback")} annexes={annexes} participants={review.participants} t={t} />
+      <RenderedFileSection sectionKey="layout" title={t("output.layoutTitle")} files={review.layoutFiles} fallbackName={t("output.layoutFallback")} annexes={annexes} participants={review.participants} t={t} />
+      <RenderedFileSection sectionKey="extraDocuments" title={t("output.extraDocumentsTitle")} files={review.extraDocumentFiles} fallbackName={t("output.extraDocumentFallback")} annexes={annexes} participants={review.participants} t={t} />
       <RenderedAnnexes annexes={annexes} t={t} />
     </article>
   );
@@ -148,6 +148,7 @@ function RenderedFileSection({
   files,
   fallbackName,
   annexes,
+  participants,
   t,
 }: {
   sectionKey: string;
@@ -155,6 +156,7 @@ function RenderedFileSection({
   files: Array<{ name: string; findings: Finding[] }>;
   fallbackName: string;
   annexes: RenderedAnnex[];
+  participants: Participant[];
   t: TFunction;
 }) {
   return (
@@ -191,6 +193,16 @@ function RenderedFileSection({
                             <span className="preview-finding-chip" style={getFindingChipStyle(finding.severity)}>
                               {finding.text}
                             </span>
+                            {participants.length > 0 && ((finding.reportedBy ?? []).length > 0 || (finding.assignedTo ?? []).length > 0) && (
+                              <div className="rf-finding-people">
+                                {(finding.reportedBy ?? []).length > 0 && (
+                                  <span>{t("output.reportedByColumn")}: {resolveNames(finding.reportedBy ?? [], participants)}</span>
+                                )}
+                                {(finding.assignedTo ?? []).length > 0 && (
+                                  <span>{t("output.assignedToColumn")}: {resolveNames(finding.assignedTo ?? [], participants)}</span>
+                                )}
+                              </div>
+                            )}
                           </td>
                           <td className="px-3 py-2">
                             {findingAnnexes.length ? (
@@ -382,4 +394,10 @@ function hexToRgba(hex: string, alpha: number) {
   const blue = parseInt(value.slice(4, 6), 16);
 
   return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+}
+
+function resolveNames(initials: string[], participants: Participant[]): string {
+  return initials
+    .map((ini) => participants.find((p) => (p.initials || p.name.slice(0, 2).toUpperCase()) === ini)?.name ?? ini)
+    .join(", ");
 }

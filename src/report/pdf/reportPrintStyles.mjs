@@ -551,6 +551,15 @@ td {
   text-justify: inter-word;
 }
 
+.finding-people {
+  display: flex;
+  flex-direction: column;
+  gap: 1mm;
+  margin-top: 2mm;
+  font-size: 7.5pt;
+  color: #64748b;
+}
+
 .finding-annexes-cell {
   text-align: left;
 }
