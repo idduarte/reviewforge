@@ -25,21 +25,22 @@ const SEV_META: Record<FindingSeverity, { pillClass: string; btnClass: string; a
 
 const SEVERITIES: FindingSeverity[] = ["!", "+", "A", "-", "?", "*"];
 
-const SEV_LABELS: Record<FindingSeverity, string> = {
-  "!": "Fatal",
-  "+": "Importante",
-  "A": "Recurrente",
-  "-": "Menor",
-  "?": "Consulta",
-  "*": "Nota",
+const SEV_I18N_KEYS: Record<FindingSeverity, string> = {
+  "!": "findings.fatal",
+  "+": "findings.important",
+  "A": "findings.recurring",
+  "-": "findings.minor",
+  "?": "findings.question",
+  "*": "findings.note",
 };
 
 export function SevPill({ severity }: { severity: FindingSeverity }) {
+  const { t } = useTranslation();
   const m = SEV_META[severity];
   return (
     <span className={`rf-sev-pill ${m.pillClass}`}>
       <span className="rf-sev-dot" />
-      {SEV_LABELS[severity]}
+      {t(SEV_I18N_KEYS[severity])}
     </span>
   );
 }

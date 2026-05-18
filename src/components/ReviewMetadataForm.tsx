@@ -1,4 +1,4 @@
-import { useId, type ChangeEvent, type ReactNode } from "react";
+import { useId, type ChangeEvent, type DragEvent, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "./PageHeader";
 import { TextAreaField } from "./Field";
@@ -239,7 +239,7 @@ export function ReviewMetadataForm({ metadata, errors, subTab, onChange, onLogoC
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div className="rf-logo-name">{t("meta.logoPreview")}</div>
                     <div style={{ fontSize: 11.5, color: "#6b7280", marginTop: 2 }}>
-                      {metadata.companyName || "Logo de empresa"}
+                      {metadata.companyName || t("pdf.logoAlt")}
                     </div>
                   </div>
                   <button className="rf-ghost-btn sm" type="button" onClick={() => onChange("companyLogoDataUrl", "")}>
@@ -249,7 +249,17 @@ export function ReviewMetadataForm({ metadata, errors, subTab, onChange, onLogoC
                 </div>
               )}
 
-              <label className="rf-drop-zone" htmlFor={logoInputId} style={{ cursor: "pointer" }}>
+              <label
+                className="rf-drop-zone"
+                htmlFor={logoInputId}
+                style={{ cursor: "pointer" }}
+                onDragOver={(e: DragEvent<HTMLLabelElement>) => e.preventDefault()}
+                onDrop={(e: DragEvent<HTMLLabelElement>) => {
+                  e.preventDefault();
+                  const file = e.dataTransfer.files?.[0];
+                  if (file) onLogoChange(file);
+                }}
+              >
                 <div className="rf-drop-zone-icon">
                   <UploadIcon />
                 </div>

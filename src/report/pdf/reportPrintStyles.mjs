@@ -456,6 +456,27 @@ td {
   background: #ffffff;
 }
 
+.meeting-summary-body h2 {
+  font-size: 13pt;
+  font-weight: 600;
+  color: var(--color-primary-dark);
+  margin: 5mm 0 2mm;
+}
+
+.meeting-summary-body h3 {
+  font-size: 10pt;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-muted);
+  margin: 4mm 0 1.5mm;
+}
+
+.meeting-summary-body h2:first-child,
+.meeting-summary-body h3:first-child {
+  margin-top: 0;
+}
+
 .meeting-summary-body p {
   margin: 0 0 4mm;
   text-align: justify;
@@ -466,21 +487,28 @@ td {
   margin-bottom: 0;
 }
 
-.meeting-summary-body ol {
+.meeting-summary-body ol,
+.meeting-summary-body ul {
   margin: 0 0 4mm;
-  padding-left: 5mm;
+  padding-left: 7mm;
 }
 
-.meeting-summary-body ol:last-child {
+.meeting-summary-body ol { list-style-type: decimal; }
+.meeting-summary-body ul { list-style-type: disc; }
+
+.meeting-summary-body ol:last-child,
+.meeting-summary-body ul:last-child {
   margin-bottom: 0;
 }
 
-.meeting-summary-body ol li {
+.meeting-summary-body ol li,
+.meeting-summary-body ul li {
   margin-bottom: 1.5mm;
   line-height: 1.5;
 }
 
-.meeting-summary-body ol li:last-child {
+.meeting-summary-body ol li:last-child,
+.meeting-summary-body ul li:last-child {
   margin-bottom: 0;
 }
 

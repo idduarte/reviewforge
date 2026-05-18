@@ -120,9 +120,12 @@ export function Sidebar({ activeTab, onTabChange, metaSubTab, onMetaSubTabChange
           Review<strong>Forge</strong>
         </span>
       </div>
+      <div className="sb-version-bar">
+        <span className="sb-version">v{__APP_VERSION__}</span>
+      </div>
 
       {/* Nav */}
-      <nav className="sb-nav" aria-label="Navegación principal">
+      <nav className="sb-nav" aria-label={t("ui.mainNav")}>
 
         {/* PROYECTO */}
         <div className="sb-section-label">{t("ui.sectionProject")}</div>
@@ -130,7 +133,7 @@ export function Sidebar({ activeTab, onTabChange, metaSubTab, onMetaSubTabChange
         <div className={`sb-nav-item${activeTab === "meta" ? " sb-nav-item-active" : ""}`} style={{ cursor: "default" }}>
           <button
             className="sb-chevron-btn"
-            aria-label={open["meta"] ? "Colapsar" : "Expandir"}
+            aria-label={open["meta"] ? t("ui.collapse") : t("ui.expand")}
             onClick={() => toggleSection("meta")}
           >
             <span className={`sb-chevron${open["meta"] ? " sb-chevron-open" : ""}`}>
@@ -178,7 +181,7 @@ export function Sidebar({ activeTab, onTabChange, metaSubTab, onMetaSubTabChange
               <div className={`sb-nav-item${isActive ? " sb-nav-item-active" : ""}`} style={{ cursor: "default" }}>
                 <button
                   className="sb-chevron-btn"
-                  aria-label={isOpen ? "Colapsar" : "Expandir"}
+                  aria-label={isOpen ? t("ui.collapse") : t("ui.expand")}
                   onClick={(e) => { e.stopPropagation(); toggleSection(tab); }}
                 >
                   <span className={`sb-chevron${isOpen ? " sb-chevron-open" : ""}`}>
@@ -245,7 +248,7 @@ export function Sidebar({ activeTab, onTabChange, metaSubTab, onMetaSubTabChange
               ))}
             </div>
           )}
-          <button className="sb-ghost-btn" onClick={() => setLangOpen((v) => !v)} title="Cambiar idioma">
+          <button className="sb-ghost-btn" onClick={() => setLangOpen((v) => !v)} title={t("ui.changeLang")}>
             <GlobeIcon />
             <span>{i18n.language.toUpperCase()}</span>
           </button>

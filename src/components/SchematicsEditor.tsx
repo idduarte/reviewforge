@@ -38,7 +38,7 @@ export function SchematicsEditor({
         tiles={[
           { label: t("ui.sectionFiles"), value: String(schematics.length), sub: ".sch" },
           { label: t("ui.findings"), value: String(totalFindings), sub: t("ui.total") },
-          ...(fatalCount > 0 ? [{ label: "Bloqueantes", value: String(fatalCount), sub: "fatal", color: "#8f2f2a" }] : []),
+          ...(fatalCount > 0 ? [{ label: t("findings.fatal"), value: String(fatalCount), sub: t("findings.fatal").toLowerCase(), color: "#8f2f2a" }] : []),
         ]}
         cta={<button className="rf-primary-btn" type="button" onClick={onAddSchematic}><PlusIcon /><span>{t("schematics.addFile")}</span></button>}
       />
