@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import type { Finding, FindingImage, Review } from "../domain/reviewTypes";
 import type { ReviewValidationResult } from "../domain/reviewValidation";
+import { markdownToHtml } from "../utils/markdownToHtml";
 
 interface OutputPreviewProps {
   review: Review;
@@ -94,7 +95,10 @@ function MarkdownSummary({ review, t }: { review: Review; t: TFunction }) {
       </div>
 
       <h3 className="mt-4 mb-1 font-semibold">{t("output.summaryLabel")}</h3>
-      <p className="whitespace-pre-wrap">{review.metadata.meetingSummary || t("output.noSummary")}</p>
+      {review.metadata.meetingSummary
+        ? <div className="output-summary-body" dangerouslySetInnerHTML={{ __html: markdownToHtml(review.metadata.meetingSummary) }} />
+        : <p className="muted text-sm italic">{t("output.noSummary")}</p>
+      }
 
       <h2 className="mt-5 mb-2 text-lg font-semibold">{t("output.participantsTitle")}</h2>
       <div className="overflow-x-auto">

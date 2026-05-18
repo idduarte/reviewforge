@@ -14,16 +14,6 @@ const META_SUB_LABEL_KEYS: Record<MetaSubTab, string> = {
   participantes: "meta.sub_participantes",
 };
 
-const SECTION_ORDER: TabId[] = ["meta", "schematics", "bom", "layout", "extraDocuments", "output"];
-
-const SECTION_INDEX: Record<TabId, number> = {
-  meta:           1,
-  schematics:     2,
-  bom:            3,
-  layout:         4,
-  extraDocuments: 5,
-  output:         6,
-};
 
 export function TopBar({ activeTab, metaSubTab, review }: TopBarProps) {
   const { t } = useTranslation();
@@ -56,13 +46,6 @@ export function TopBar({ activeTab, metaSubTab, review }: TopBarProps) {
       </div>
 
       <div style={{ flex: 1 }} />
-
-      {/* Search placeholder */}
-      <div className="tb-search" role="search" aria-label="Buscar hallazgo">
-        <SearchIcon />
-        <span style={{ flex: 1, color: "#9ca3af" }}>{t("ui.searchPlaceholder")}</span>
-        <span className="tb-search-kbd">⌘K</span>
-      </div>
 
       {/* Context */}
       {contextInfo && (
@@ -100,17 +83,10 @@ function getContextInfo(
   if (!files.length) return null;
 
   const name = files[0].name || "—";
-  const detail = `${files.length} archivo${files.length !== 1 ? "s" : ""} · ${totalFindings} hallazgo${totalFindings !== 1 ? "s" : ""}`;
+  const fileWord = files.length !== 1 ? t("ui.files") : t("ui.file");
+  const findingWord = totalFindings !== 1 ? t("ui.findings") : t("ui.finding");
+  const detail = `${files.length} ${fileWord} · ${totalFindings} ${findingWord}`;
 
   return { name, detail };
 }
 
-function SearchIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-      <circle cx="11" cy="11" r="7" />
-      <path d="M20 20l-3.5-3.5" />
-    </svg>
-  );
-}

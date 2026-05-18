@@ -187,10 +187,10 @@ function buildParticipantsPage(review, t) {
 }
 
 function buildMeetingSummaryPages(metadata, t) {
-  const paragraphs = splitParagraphs(metadata.meetingSummary);
+  const blocks = markdownToBlocks(metadata.meetingSummary);
   const title = t("pdf.meetingSummaryTitle");
 
-  if (!paragraphs.length) {
+  if (!blocks.length) {
     return [
       {
         kind: "standard",
@@ -205,10 +205,7 @@ function buildMeetingSummaryPages(metadata, t) {
   }
 
   const chunks = paginateItems(
-    paragraphs.map((paragraph) => ({
-      html: paragraphToHtml(paragraph),
-      units: estimateParagraphUnits(paragraph),
-    })),
+    blocks,
     SUMMARY_FIRST_PAGE_CAPACITY,
     SUMMARY_FOLLOWING_PAGE_CAPACITY,
   );
@@ -363,9 +360,9 @@ function renderPage(page, pageNumber, reviewforgeMarkSvg, pdfCoverKicker, pdfFoo
     ${page.content}
   </main>
   <footer class="page-footer">
-    <div class="page-footer-label">${escapeHtml(page.footerLabel || "")}</div>
-    <div class="page-footer-note">${escapeHtml(pdfFooterNote)}</div>
     <div class="page-footer-line"></div>
+    <div class="page-footer-label">${escapeHtml(page.footerLabel || "")}</div>
+    <div class="page-footer-center"></div>
     ${pageNumber ? `<div class="page-number">${pageNumber}</div>` : '<div class="page-number page-number-empty"></div>'}
   </footer>
 </section>`.trim();
@@ -374,26 +371,29 @@ function renderPage(page, pageNumber, reviewforgeMarkSvg, pdfCoverKicker, pdfFoo
 function renderPageHeader(metadata, reviewforgeMarkSvg, t) {
   return `
 <div class="page-header-inner">
-  ${renderPageHeaderLeft(metadata, t)}
-  <div class="page-header-right">
-    ${renderReviewforgeBrand(reviewforgeMarkSvg)}
-  </div>
+  ${renderPageHeaderLeft(metadata, reviewforgeMarkSvg, t)}
 </div>`.trim();
 }
 
-function renderPageHeaderLeft(metadata, t) {
+function renderPageHeaderLeft(metadata, reviewforgeMarkSvg, t) {
   const logo = metadata?.companyLogoDataUrl?.trim();
   const companyName = metadata?.companyName?.trim();
 
-  if (!logo && !companyName) {
-    return '<div class="page-header-left page-header-left-empty" aria-hidden="true"></div>';
+  if (logo) {
+    return `
+<div class="page-header-left">
+  <div class="page-brand-group">
+    <img class="page-company-logo" src="${logo}" alt="${escapeHtml(companyName || t("pdf.logoAlt"))}" style="max-height:${metadata.logoHeaderHeightMm ?? 8}mm">
+    ${companyName ? `<div class="page-company-name">${escapeHtml(companyName)}</div>` : ""}
+  </div>
+</div>`.trim();
   }
 
   return `
 <div class="page-header-left">
   <div class="page-brand-group">
-    ${logo ? `<img class="page-company-logo" src="${logo}" alt="${escapeHtml(companyName || t("pdf.logoAlt"))}">` : ""}
-    ${companyName ? `<div class="page-company-name">${escapeHtml(companyName)}</div>` : ""}
+    ${renderReviewforgeBrand(reviewforgeMarkSvg)}
+    ${companyName ? `<div class="page-header-sep" aria-hidden="true">·</div><div class="page-company-name">${escapeHtml(companyName)}</div>` : ""}
   </div>
 </div>`.trim();
 }
@@ -486,7 +486,7 @@ function renderCoverBrand(metadata, t) {
 
   return `
 <div class="cover-custom-brand">
-  ${logo ? `<img class="cover-company-logo" src="${logo}" alt="${escapeHtml(companyName || t("pdf.logoAlt"))}">` : ""}
+  ${logo ? `<img class="cover-company-logo" src="${logo}" alt="${escapeHtml(companyName || t("pdf.logoAlt"))}" style="max-height:${metadata.logoCoverHeightMm ?? 15}mm">` : ""}
   ${companyName ? `<div class="cover-company-name">${escapeHtml(companyName)}</div>` : ""}
 </div>`.trim();
 }
@@ -550,21 +550,78 @@ function estimateFindingUnits(text, references) {
   return 1 + descriptionUnits + annexUnits;
 }
 
-function paragraphToHtml(paragraph) {
-  const lines = paragraph.split(/\n/);
-  const isNumberedList = lines.length > 1 && lines.every((l) => /^\d+\.\s/.test(l.trim()));
-  if (isNumberedList) {
-    const items = lines.map((l) => `<li>${escapeHtml(l.replace(/^\d+\.\s*/, "").trim())}</li>`).join("");
-    return `<ol>${items}</ol>`;
+/**
+ * Parse markdown text into block chunks for PDF pagination.
+ * Supported: **bold**, *italic*, - unordered lists, 1. ordered lists.
+ * Returns Array<{ html, units }>.
+ */
+function markdownToBlocks(value) {
+  const lines = String(value || "").split("\n");
+  const blocks = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+    if (line.trim() === "") { i++; continue; }
+
+    const hMatch = line.match(/^(#{1,})\s+(.*)/);
+    if (hMatch) {
+      const raw = hMatch[1].length;
+      const lvl = 2;
+      const upper = raw === 1 ? ` style="text-transform:uppercase"` : "";
+      const html = `<h${lvl}${upper}>${inlineFormat(hMatch[2])}</h${lvl}>`;
+      blocks.push({ html, units: 2 });
+      i++; continue;
+    }
+
+    if (/^\d+\.\s/.test(line)) {
+      const items = [];
+      while (i < lines.length && /^\d+\.\s/.test(lines[i])) {
+        items.push(`<li>${inlineFormat(lines[i].replace(/^\d+\.\s*/, ""))}</li>`);
+        i++;
+      }
+      const html = `<ol>${items.join("")}</ol>`;
+      blocks.push({ html, units: Math.max(2, items.length) });
+      continue;
+    }
+
+    if (/^[-*]\s/.test(line)) {
+      const items = [];
+      while (i < lines.length && /^[-*]\s/.test(lines[i])) {
+        items.push(`<li>${inlineFormat(lines[i].replace(/^[-*]\s*/, ""))}</li>`);
+        i++;
+      }
+      const html = `<ul>${items.join("")}</ul>`;
+      blocks.push({ html, units: Math.max(2, items.length) });
+      continue;
+    }
+
+    const para = [];
+    while (
+      i < lines.length &&
+      lines[i].trim() !== "" &&
+      !/^#+\s/.test(lines[i]) &&
+      !/^[-*]\s/.test(lines[i]) &&
+      !/^\d+\.\s/.test(lines[i])
+    ) {
+      para.push(inlineFormat(lines[i]));
+      i++;
+    }
+    if (para.length) {
+      const html = `<p>${para.join(" ")}</p>`;
+      blocks.push({ html, units: estimateParagraphUnits(para.join(" ")) });
+    }
   }
-  return `<p>${escapeHtml(paragraph.replace(/\n/g, " ").trim())}</p>`;
+
+  return blocks;
 }
 
-function splitParagraphs(value) {
-  return String(value || "")
-    .split(/\n\s*\n/g)
-    .map((paragraph) => paragraph.trim())
-    .filter(Boolean);
+function inlineFormat(text) {
+  return escapeHtml(text)
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/__(.+?)__/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>")
+    .replace(/_(.+?)_/g, "<em>$1</em>");
 }
 
 function hasCustomCoverBrand(metadata) {

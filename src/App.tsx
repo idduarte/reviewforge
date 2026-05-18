@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { BomEditor } from "./components/BomEditor";
 import { ExtraDocumentsEditor } from "./components/ExtraDocumentsEditor";
@@ -398,7 +398,7 @@ export default function App() {
 
           {activeTab === "output" && <OutputPreview review={review} validation={validation} />}
 
-          <ContentFooter review={review} validation={validation} />
+          <ContentFooter review={review} />
         </div>
       </div>
 
@@ -455,7 +455,8 @@ function MetaView({
   );
 }
 
-function ContentFooter({ review, validation }: { review: ReturnType<typeof createReview>; validation: ReturnType<typeof validateReview> }) {
+function ContentFooter({ review }: { review: ReturnType<typeof createReview> }) {
+  const { t, i18n } = useTranslation();
   const totalSections = 7;
   const completed = [
     Boolean(review.metadata.reviewTitle),
@@ -469,8 +470,7 @@ function ContentFooter({ review, validation }: { review: ReturnType<typeof creat
 
   return (
     <div className="content-footer">
-      <span>autosave · {new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span>
-      <span>{completed} de {totalSections} secciones completadas</span>
+      <span>{t("ui.sectionsCompleted", { completed, total: totalSections })}</span>
     </div>
   );
 }
@@ -488,145 +488,3 @@ function Toast({ message }: { message: string }) {
   );
 }
 
-function LanguageSwitcher() {
-  const { i18n } = useTranslation();
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  const langs = Object.keys(i18n.options.resources ?? {});
-
-  function getNativeName(code: string): string {
-    const bundle = i18n.getResourceBundle(code, "translation") as
-      | { lang?: { nativeName?: string } }
-      | undefined;
-    return bundle?.lang?.nativeName ?? code.toUpperCase();
-  }
-
-  useEffect(() => {
-    function onOutsideClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", onOutsideClick);
-    return () => document.removeEventListener("mousedown", onOutsideClick);
-  }, []);
-
-  function selectLang(code: string) {
-    i18n.changeLanguage(code);
-    localStorage.setItem("lang", code);
-    setOpen(false);
-  }
-
-  return (
-    <div ref={ref} className="lang-switcher">
-      <button
-        className="lang-switcher-btn"
-        type="button"
-        onClick={() => setOpen((prev) => !prev)}
-        aria-haspopup="listbox"
-        aria-expanded={open ? "true" : "false"}
-      >
-        <GlobeIcon />
-        <span>{getNativeName(i18n.language)}</span>
-        <ChevronIcon open={open} />
-      </button>
-      {open && (
-        <ul className="lang-dropdown" role="listbox" aria-label="Select language">
-          {langs.map((code) => (
-            <li
-              key={code}
-              role="option"
-              aria-selected={code === i18n.language ? "true" : "false"}
-              className={`lang-dropdown-item${code === i18n.language ? " active" : ""}`}
-              onClick={() => selectLang(code)}
-            >
-              {getNativeName(code)}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
-
-function GlobeIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.3" />
-      <ellipse cx="8" cy="8" rx="2.6" ry="6.5" stroke="currentColor" strokeWidth="1.3" />
-      <line x1="1.5" y1="8" x2="14.5" y2="8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-      <line x1="2.2" y1="5" x2="13.8" y2="5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-      <line x1="2.2" y1="11" x2="13.8" y2="11" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function ChevronIcon({ open }: { open: boolean }) {
-  return (
-    <svg
-      width="12"
-      height="12"
-      viewBox="0 0 12 12"
-      fill="none"
-      aria-hidden="true"
-      className="lang-chevron"
-      data-open={open ? "true" : "false"}
-    >
-      <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function sanitizeInlineSummaryHtml(input: string) {
-  const allowedTags = new Set(["strong", "b", "em", "i", "u", "br", "a"]);
-  const template = document.createElement("template");
-
-  template.innerHTML = input.trim();
-
-  const sanitizeNode = (node: Node) => {
-    if (node.nodeType === Node.ELEMENT_NODE) {
-      const element = node as HTMLElement;
-      const tagName = element.tagName.toLowerCase();
-
-      if (!allowedTags.has(tagName)) {
-        const text = document.createTextNode(element.textContent ?? "");
-        element.replaceWith(text);
-        return;
-      }
-
-      if (tagName === "a") {
-        const href = element.getAttribute("href")?.trim() ?? "";
-        const isSafeHref = /^(https?:|mailto:)/i.test(href);
-
-        for (const attribute of Array.from(element.attributes)) {
-          element.removeAttribute(attribute.name);
-        }
-
-        if (!isSafeHref) {
-          const text = document.createTextNode(element.textContent ?? "");
-          element.replaceWith(text);
-          return;
-        }
-
-        element.setAttribute("href", href);
-        element.setAttribute("target", "_blank");
-        element.setAttribute("rel", "noreferrer noopener");
-      } else {
-        for (const attribute of Array.from(element.attributes)) {
-          element.removeAttribute(attribute.name);
-        }
-      }
-    }
-
-    for (const child of Array.from(node.childNodes)) {
-      sanitizeNode(child);
-    }
-  };
-
-  for (const child of Array.from(template.content.childNodes)) {
-    sanitizeNode(child);
-  }
-
-  return template.innerHTML;
-}

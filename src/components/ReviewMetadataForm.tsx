@@ -1,4 +1,4 @@
-import { useId, type ChangeEvent, type ReactNode } from "react";
+import { useId, type ChangeEvent, type DragEvent, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "./PageHeader";
 import { TextAreaField } from "./Field";
@@ -239,7 +239,7 @@ export function ReviewMetadataForm({ metadata, errors, subTab, onChange, onLogoC
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div className="rf-logo-name">{t("meta.logoPreview")}</div>
                     <div style={{ fontSize: 11.5, color: "#6b7280", marginTop: 2 }}>
-                      {metadata.companyName || "Logo de empresa"}
+                      {metadata.companyName || t("pdf.logoAlt")}
                     </div>
                   </div>
                   <button className="rf-ghost-btn sm" type="button" onClick={() => onChange("companyLogoDataUrl", "")}>
@@ -249,7 +249,17 @@ export function ReviewMetadataForm({ metadata, errors, subTab, onChange, onLogoC
                 </div>
               )}
 
-              <label className="rf-drop-zone" htmlFor={logoInputId} style={{ cursor: "pointer" }}>
+              <label
+                className="rf-drop-zone"
+                htmlFor={logoInputId}
+                style={{ cursor: "pointer" }}
+                onDragOver={(e: DragEvent<HTMLLabelElement>) => e.preventDefault()}
+                onDrop={(e: DragEvent<HTMLLabelElement>) => {
+                  e.preventDefault();
+                  const file = e.dataTransfer.files?.[0];
+                  if (file) onLogoChange(file);
+                }}
+              >
                 <div className="rf-drop-zone-icon">
                   <UploadIcon />
                 </div>
@@ -268,6 +278,27 @@ export function ReviewMetadataForm({ metadata, errors, subTab, onChange, onLogoC
                 onChange={(e) => onLogoChange(e.target.files?.[0] ?? null)}
               />
 
+              <div className="rf-logo-size-row">
+                <span className="rf-logo-size-label">{t("meta.logoHeaderHeight")}</span>
+                <input
+                  type="number"
+                  className="rf-logo-size-input"
+                  min={4} max={30} step={1}
+                  value={metadata.logoHeaderHeightMm}
+                  onChange={(e) => onChange("logoHeaderHeightMm", Math.max(4, Math.min(30, Number(e.target.value) || 8)))}
+                />
+                <span className="rf-logo-size-unit">mm</span>
+                <span className="rf-logo-size-sep">·</span>
+                <span className="rf-logo-size-label">{t("meta.logoCoverHeight")}</span>
+                <input
+                  type="number"
+                  className="rf-logo-size-input"
+                  min={4} max={50} step={1}
+                  value={metadata.logoCoverHeightMm}
+                  onChange={(e) => onChange("logoCoverHeightMm", Math.max(4, Math.min(50, Number(e.target.value) || 15)))}
+                />
+                <span className="rf-logo-size-unit">mm</span>
+              </div>
               <div className="rf-input-hint">{t("meta.logoHint")}</div>
             </div>
           </div>

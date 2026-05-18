@@ -173,8 +173,6 @@ body {
   height: 100%;
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
-  gap: 8mm;
   padding-top: 0.5mm;
   border-bottom: 1.6px solid var(--color-accent);
 }
@@ -188,13 +186,6 @@ body {
 
 .page-header-left-empty {
   min-height: 1px;
-}
-
-.page-header-right {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  flex: 0 0 auto;
 }
 
 .page-brand-lockup {
@@ -218,11 +209,11 @@ body {
 }
 
 .page-brand-group {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 4mm;
   min-width: 0;
-  max-width: 112mm;
+  flex: 1 1 auto;
 }
 
 .page-company-logo {
@@ -236,12 +227,10 @@ body {
 
 .page-company-name {
   font-size: 11pt;
-  line-height: 1.1;
+  line-height: 1.2;
   font-weight: 600;
   color: var(--color-primary-dark);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  word-break: break-word;
 }
 
 .page-wordmark {
@@ -272,7 +261,7 @@ body {
   grid-template-columns: auto 1fr auto;
   grid-template-areas:
     "line line line"
-    "label note number";
+    "label center number";
   align-items: end;
   row-gap: 2mm;
   column-gap: 4mm;
@@ -293,13 +282,16 @@ body {
   white-space: nowrap;
 }
 
-.page-footer-note {
-  grid-area: note;
-  color: var(--color-muted);
-  font-size: 8.5pt;
-  font-weight: 400;
-  text-align: center;
-  justify-self: center;
+.page-header-sep {
+  color: var(--color-border);
+  font-size: 14pt;
+  font-weight: 300;
+  flex: 0 0 auto;
+  line-height: 1;
+}
+
+.page-footer-center {
+  grid-area: center;
 }
 
 .page-number {
@@ -323,7 +315,8 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
+  flex: 1 1 auto;
   min-height: 0;
 }
 
@@ -338,7 +331,7 @@ body {
 
 .cover-wordmark {
   width: 100%;
-  margin: 30mm auto 50mm;
+  margin: 0 auto;
   font-size: 58pt;
   line-height: 0.94;
   font-weight: 600;
@@ -352,7 +345,7 @@ body {
 
 .cover-custom-brand {
   width: 100%;
-  margin: 30mm auto 50mm;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -456,6 +449,27 @@ td {
   background: #ffffff;
 }
 
+.meeting-summary-body h2 {
+  font-size: 13pt;
+  font-weight: 600;
+  color: var(--color-primary-dark);
+  margin: 5mm 0 2mm;
+}
+
+.meeting-summary-body h3 {
+  font-size: 10pt;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-muted);
+  margin: 4mm 0 1.5mm;
+}
+
+.meeting-summary-body h2:first-child,
+.meeting-summary-body h3:first-child {
+  margin-top: 0;
+}
+
 .meeting-summary-body p {
   margin: 0 0 4mm;
   text-align: justify;
@@ -466,21 +480,28 @@ td {
   margin-bottom: 0;
 }
 
-.meeting-summary-body ol {
+.meeting-summary-body ol,
+.meeting-summary-body ul {
   margin: 0 0 4mm;
-  padding-left: 5mm;
+  padding-left: 7mm;
 }
 
-.meeting-summary-body ol:last-child {
+.meeting-summary-body ol { list-style-type: decimal; }
+.meeting-summary-body ul { list-style-type: disc; }
+
+.meeting-summary-body ol:last-child,
+.meeting-summary-body ul:last-child {
   margin-bottom: 0;
 }
 
-.meeting-summary-body ol li {
+.meeting-summary-body ol li,
+.meeting-summary-body ul li {
   margin-bottom: 1.5mm;
   line-height: 1.5;
 }
 
-.meeting-summary-body ol li:last-child {
+.meeting-summary-body ol li:last-child,
+.meeting-summary-body ul li:last-child {
   margin-bottom: 0;
 }
 
