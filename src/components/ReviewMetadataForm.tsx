@@ -278,6 +278,27 @@ export function ReviewMetadataForm({ metadata, errors, subTab, onChange, onLogoC
                 onChange={(e) => onLogoChange(e.target.files?.[0] ?? null)}
               />
 
+              <div className="rf-logo-size-row">
+                <span className="rf-logo-size-label">{t("meta.logoHeaderHeight")}</span>
+                <input
+                  type="number"
+                  className="rf-logo-size-input"
+                  min={4} max={30} step={1}
+                  value={metadata.logoHeaderHeightMm}
+                  onChange={(e) => onChange("logoHeaderHeightMm", Math.max(4, Math.min(30, Number(e.target.value) || 8)))}
+                />
+                <span className="rf-logo-size-unit">mm</span>
+                <span className="rf-logo-size-sep">·</span>
+                <span className="rf-logo-size-label">{t("meta.logoCoverHeight")}</span>
+                <input
+                  type="number"
+                  className="rf-logo-size-input"
+                  min={4} max={50} step={1}
+                  value={metadata.logoCoverHeightMm}
+                  onChange={(e) => onChange("logoCoverHeightMm", Math.max(4, Math.min(50, Number(e.target.value) || 15)))}
+                />
+                <span className="rf-logo-size-unit">mm</span>
+              </div>
               <div className="rf-input-hint">{t("meta.logoHint")}</div>
             </div>
           </div>

@@ -360,9 +360,9 @@ function renderPage(page, pageNumber, reviewforgeMarkSvg, pdfCoverKicker, pdfFoo
     ${page.content}
   </main>
   <footer class="page-footer">
-    <div class="page-footer-label">${escapeHtml(page.footerLabel || "")}</div>
-    <div class="page-footer-note">${escapeHtml(pdfFooterNote)}</div>
     <div class="page-footer-line"></div>
+    <div class="page-footer-label">${escapeHtml(page.footerLabel || "")}</div>
+    <div class="page-footer-center"></div>
     ${pageNumber ? `<div class="page-number">${pageNumber}</div>` : '<div class="page-number page-number-empty"></div>'}
   </footer>
 </section>`.trim();
@@ -371,26 +371,29 @@ function renderPage(page, pageNumber, reviewforgeMarkSvg, pdfCoverKicker, pdfFoo
 function renderPageHeader(metadata, reviewforgeMarkSvg, t) {
   return `
 <div class="page-header-inner">
-  ${renderPageHeaderLeft(metadata, t)}
-  <div class="page-header-right">
-    ${renderReviewforgeBrand(reviewforgeMarkSvg)}
-  </div>
+  ${renderPageHeaderLeft(metadata, reviewforgeMarkSvg, t)}
 </div>`.trim();
 }
 
-function renderPageHeaderLeft(metadata, t) {
+function renderPageHeaderLeft(metadata, reviewforgeMarkSvg, t) {
   const logo = metadata?.companyLogoDataUrl?.trim();
   const companyName = metadata?.companyName?.trim();
 
-  if (!logo && !companyName) {
-    return '<div class="page-header-left page-header-left-empty" aria-hidden="true"></div>';
+  if (logo) {
+    return `
+<div class="page-header-left">
+  <div class="page-brand-group">
+    <img class="page-company-logo" src="${logo}" alt="${escapeHtml(companyName || t("pdf.logoAlt"))}" style="max-height:${metadata.logoHeaderHeightMm ?? 8}mm">
+    ${companyName ? `<div class="page-company-name">${escapeHtml(companyName)}</div>` : ""}
+  </div>
+</div>`.trim();
   }
 
   return `
 <div class="page-header-left">
   <div class="page-brand-group">
-    ${logo ? `<img class="page-company-logo" src="${logo}" alt="${escapeHtml(companyName || t("pdf.logoAlt"))}">` : ""}
-    ${companyName ? `<div class="page-company-name">${escapeHtml(companyName)}</div>` : ""}
+    ${renderReviewforgeBrand(reviewforgeMarkSvg)}
+    ${companyName ? `<div class="page-header-sep" aria-hidden="true">·</div><div class="page-company-name">${escapeHtml(companyName)}</div>` : ""}
   </div>
 </div>`.trim();
 }
@@ -483,7 +486,7 @@ function renderCoverBrand(metadata, t) {
 
   return `
 <div class="cover-custom-brand">
-  ${logo ? `<img class="cover-company-logo" src="${logo}" alt="${escapeHtml(companyName || t("pdf.logoAlt"))}">` : ""}
+  ${logo ? `<img class="cover-company-logo" src="${logo}" alt="${escapeHtml(companyName || t("pdf.logoAlt"))}" style="max-height:${metadata.logoCoverHeightMm ?? 15}mm">` : ""}
   ${companyName ? `<div class="cover-company-name">${escapeHtml(companyName)}</div>` : ""}
 </div>`.trim();
 }

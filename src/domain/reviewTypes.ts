@@ -59,6 +59,8 @@ export interface ReviewMetadata {
   meetingSummary: string;
   companyName: string;
   companyLogoDataUrl: string;
+  logoHeaderHeightMm: number;
+  logoCoverHeightMm: number;
 }
 
 export interface Review {

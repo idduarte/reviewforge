@@ -90,6 +90,9 @@
     "logo": "Logo",
     "logoPreview": "Logo preview",
     "logoHint": "Optional: will be used on the PDF cover if a logo or company name is provided.",
+    "logoHeaderHeight": "Header size",
+    "logoCoverHeight": "Cover size",
+    "logoSizeHint": "Maximum logo height in the PDF (in mm).",
     "summaryTitle": "Meeting summary",
     "summaryLabel": "Summary",
     "summaryPlaceholder": "General summary of the meeting and project status..."

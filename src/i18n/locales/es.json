@@ -90,6 +90,9 @@
     "logo": "Logo",
     "logoPreview": "Vista previa del logo",
     "logoHint": "Opcional: se usará en la portada del PDF si existe logo o nombre empresa.",
+    "logoHeaderHeight": "Tamaño en encabezado",
+    "logoCoverHeight": "Tamaño en portada",
+    "logoSizeHint": "Altura máxima del logo en el PDF (en mm).",
     "summaryTitle": "Resumen de la reunión",
     "summaryLabel": "Resumen",
     "summaryPlaceholder": "Resumen general de la reunión y estado del proyecto..."

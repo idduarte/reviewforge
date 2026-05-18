@@ -14,6 +14,8 @@ export function createMetadata(): ReviewMetadata {
     meetingSummary: "",
     companyName: "",
     companyLogoDataUrl: "",
+    logoHeaderHeightMm: 8,
+    logoCoverHeightMm: 15,
   };
 }
 
