@@ -1,9 +1,9 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
-import { readFileSync } from "fs";
 
-const { version } = JSON.parse(readFileSync("./package.json", "utf-8"));
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { version } = require("./package.json") as { version: string };
 
 export default defineConfig({
   base: "./",

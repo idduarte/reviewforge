@@ -74,7 +74,7 @@ function validateMetadata(metadata: ReviewMetadata): MetadataErrors {
   const errors: MetadataErrors = {};
 
   requiredMetadataFields.forEach(({ key, labelKey }) => {
-    if (!metadata[key].trim()) {
+    if (!String(metadata[key]).trim()) {
       errors[key] = i18n.t("validation.required", { field: i18n.t(labelKey) });
     }
   });
